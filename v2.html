@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>구구단 나눗셈 레이싱</title>
+    <style>
+        :root {
+            --primary: #4a90e2;
+            --success: #2ecc71;
+            --error: #e74c3c;
+            --warning: #f1c40f;
+            --dark: #2c3e50;
+            --light: #ecf0f1;
+        }
+
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            overflow: hidden; font-family: 'Pretendard', sans-serif;
+            background: #1a1a2e; color: white;
+        }
+
+        /* 설정 화면 */
+        #setup-screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            background: rgba(0,0,0,0.9); z-index: 1000;
+        }
+        .setup-box {
+            background: rgba(255,255,255,0.1); padding: 40px; border-radius: 30px;
+            text-align: center; border: 2px solid var(--primary); backdrop-filter: blur(10px);
+        }
+
+        button {
+            padding: 15px 25px; font-size: 1.2rem; margin: 5px; cursor: pointer;
+            border: none; border-radius: 12px; transition: 0.2s; font-weight: bold;
+        }
+        .btn-mode { background: #555; color: white; }
+        .btn-mode.selected { background: var(--primary); transform: scale(1.1); }
+        .btn-split { background: #555; color: white; }
+        .btn-split.selected { background: var(--warning); color: #000; transform: scale(1.1); }
+        .btn-start { background: var(--success); color: white; width: 100%; margin-top: 30px; font-size: 1.8rem; }
+
+        /* 게임 영역 레이아웃 */
+        #game-area { display: flex; width: 100%; height: 100%; }
+        .player-column {
+            flex: 1; border-right: 2px solid rgba(255,255,255,0.1);
+            display: flex; flex-direction: column; position: relative;
+            background: linear-gradient(to bottom, #2c3e50, #000);
+        }
+
+        /* 레이싱 트랙 영역 */
+        .racing-section {
+            height: 30%; background: #333; position: relative;
+            border-bottom: 4px dashed #666; overflow: hidden;
+        }
+        .track-lane {
+            position: absolute; bottom: 10px; width: 100%; height: 50px;
+            border-bottom: 2px solid #555;
+        }
+        .car {
+            position: absolute; bottom: 5px; left: 0; font-size: 3rem;
+            transition: left 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 5;
+        }
+        .finish-line {
+            position: absolute; right: 20px; top: 0; bottom: 0;
+            width: 10px; background: repeating-linear-gradient(0deg, #fff, #fff 10px, #000 10px, #000 20px);
+        }
+
+        /* 퀴즈 영역 */
+        .quiz-section {
+            flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            padding: 20px; position: relative;
+        }
+        .problem { font-size: 3.5rem; font-weight: bold; margin-bottom: 20px; text-shadow: 2px 2px 10px rgba(0,0,0,0.5); }
+        .answer-box {
+            font-size: 4rem; width: 80%; height: 100px; background: rgba(255,255,255,0.1);
+            border-bottom: 4px solid var(--primary); display: flex; align-items: center; justify-content: center;
+        }
+
+        /* 키패드 */
+        .keypad {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+            padding: 15px; background: rgba(0,0,0,0.4);
+        }
+        .key {
+            height: 70px; background: #eee; color: #222; border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.8rem; font-weight: bold; cursor: pointer; user-select: none;
+        }
+        .key:active { transform: scale(0.9); background: var(--primary); color: white; }
+        .key.clr { background: var(--error); color: white; }
+        .key.ent { background: var(--success); color: white; }
+
+        /* 상태 레이어 */
+        .lock-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(231, 76, 60, 0.7); display: none;
+            flex-direction: column; align-items: center; justify-content: center;
+            z-index: 50; font-size: 2rem; font-weight: bold; color: white;
+        }
+        .next-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(46, 204, 113, 0.9); display: none;
+            flex-direction: column; align-items: center; justify-content: center;
+            z-index: 60;
+        }
+
+        #result-screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95); display: none; flex-direction: column;
+            align-items: center; justify-content: center; z-index: 2000;
+        }
+
+        .particle { position: absolute; pointer-events: none; border-radius: 50%; z-index: 100; }
+    </style>
+</head>
+<body>
+
+<div id="setup-screen">
+    <div class="setup-box">
+        <h1 style="font-size: 3rem; color: var(--warning); margin-bottom: 10px;">🏎️ 나눗셈 레이싱 배틀</h1>
+        <p>구구단 범위의 나눗셈 실력을 겨뤄보세요!</p>
+        
+        <div style="margin: 20px;">
+            <p>모드 설정</p>
+            <button class="btn-mode selected" onclick="setMode('practice', this)">연습 모드 (순차)</button>
+            <button class="btn-mode" onclick="setMode('game', this)">게임 모드 (경쟁)</button>
+        </div>
+
+        <div style="margin: 20px;">
+            <p>참여 인원</p>
+            <button class="btn-split selected" onclick="setSplit(1, this)">1명</button>
+            <button class="btn-split" onclick="setSplit(2, this)">2명</button>
+            <button class="btn-split" onclick="setSplit(3, this)">3명</button>
+            <button class="btn-split" onclick="setSplit(4, this)">4명</button>
+            <button class="btn-split" onclick="setSplit(5, this)">5명</button>
+            <button class="btn-split" onclick="setSplit(6, this)">6명</button>
+        </div>
+
+        <div style="margin: 20px;">
+            <label>목표 문제 수: </label>
+            <input type="number" id="quiz-count" value="10" min="5" max="50" style="padding:10px; font-size:1.2rem; width:80px; text-align:center; border-radius:10px;">
+        </div>
+
+        <button class="btn-start" onclick="startGame()">경기 시작!</button>
+    </div>
+</div>
+
+<div id="game-area"></div>
+
+<div id="result-screen">
+    <h1 id="winner-text" style="font-size: 5rem; color: var(--warning);">WINNER!</h1>
+    <div id="rank-list" style="width: 80%; max-width: 600px; margin-bottom: 30px;"></div>
+    <button class="btn-start" style="width:auto; padding: 20px 60px;" onclick="location.reload()">처음으로</button>
+</div>
+
+<script>
+    let mode = 'practice';
+    let splitCount = 1;
+    let quizLimit = 10;
+    let players = [];
+    let isGameOver = false;
+
+    // 사운드 시스템
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playSound(freq, type, dur) {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + dur);
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.start(); osc.stop(audioCtx.currentTime + dur);
+    }
+
+    function setMode(m, btn) {
+        mode = m;
+        document.querySelectorAll('.btn-mode').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+    }
+
+    function setSplit(s, btn) {
+        splitCount = s;
+        document.querySelectorAll('.btn-split').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+    }
+
+    function startGame() {
+        quizLimit = parseInt(document.getElementById('quiz-count').value);
+        document.getElementById('setup-screen').style.display = 'none';
+        const gameArea = document.getElementById('game-area');
+        gameArea.innerHTML = '';
+        players = [];
+        isGameOver = false;
+
+        for (let i = 0; i < splitCount; i++) {
+            const player = {
+                id: i + 1,
+                correct: 0,
+                targetAnswer: 0,
+                inputAnswer: '',
+                isLocked: false,
+                isFinished: false,
+                startTime: Date.now()
+            };
+            players.push(player);
+            createPlayerUI(player);
+            nextProblem(player);
+        }
+    }
+
+    function createPlayerUI(player) {
+        const col = document.createElement('div');
+        col.className = 'player-column';
+        col.id = `player-col-${player.id}`;
+        col.innerHTML = `
+            <div class="racing-section">
+                <div style="padding:10px; font-weight:bold; color:var(--warning)">PLAYER ${player.id}</div>
+                <div class="finish-line"></div>
+                <div class="car" id="car-${player.id}">🏎️</div>
+            </div>
+            <div class="quiz-section">
+                <div class="problem" id="prob-${player.id}">? ÷ ?</div>
+                <div class="answer-box" id="ans-${player.id}"></div>
+                <div class="lock-overlay" id="lock-${player.id}">
+                    <div>❌ 오답 페널티!</div>
+                    <div style="font-size:1.2rem">잠시만 기다리세요...</div>
+                </div>
+                <div class="next-overlay" id="next-ui-${player.id}">
+                    <h2 style="font-size:3rem">완료! 🏁</h2>
+                    <button class="btn-start" style="background:white; color:black;" onclick="resetPlayer(${player.id})">다음 학생 시작</button>
+                </div>
+            </div>
+            <div class="keypad">
+                ${[1,2,3,4,5,6,7,8,9,0].map(n => `<div class="key" onclick="handleInput(${player.id}, '${n}')">${n}</div>`).join('')}
+                <div class="key clr" onclick="handleInput(${player.id}, 'C')">C</div>
+                <div class="key ent" onclick="handleInput(${player.id}, 'E')">Enter</div>
+            </div>
+        `;
+        document.getElementById('game-area').appendChild(col);
+    }
+
+    function nextProblem(player) {
+        const a = Math.floor(Math.random() * 9) + 1;
+        const b = Math.floor(Math.random() * 9) + 1;
+        const c = a * b;
+        player.targetAnswer = b;
+        player.inputAnswer = '';
+        document.getElementById(`prob-${player.id}`).innerText = `${c} ÷ ${a} = ?`;
+        document.getElementById(`ans-${player.id}`).innerText = '';
+    }
+
+    function handleInput(pid, key) {
+        const player = players[pid - 1];
+        if (player.isLocked || player.isFinished || isGameOver) return;
+
+        const display = document.getElementById(`ans-${player.id}`);
+        if (key === 'C') {
+            player.inputAnswer = '';
+        } else if (key === 'E') {
+            if (player.inputAnswer === '') return;
+            checkAnswer(player);
+        } else {
+            if (player.inputAnswer.length < 2) player.inputAnswer += key;
+        }
+        display.innerText = player.inputAnswer;
+        createParticles(event.clientX, event.clientY, '#fff', 5);
+    }
+
+    function checkAnswer(player) {
+        const isCorrect = parseInt(player.inputAnswer) === player.targetAnswer;
+
+        if (isCorrect) {
+            player.correct++;
+            playSound(523, 'sine', 0.2);
+            updateRacing(player);
+            
+            if (player.correct >= quizLimit) {
+                finishPlayer(player);
+            } else {
+                nextProblem(player);
+            }
+        } else {
+            // 오답 페널티
+            player.isLocked = true;
+            playSound(150, 'sawtooth', 0.5);
+            const lockUI = document.getElementById(`lock-${player.id}`);
+            lockUI.style.display = 'flex';
+            
+            setTimeout(() => {
+                player.isLocked = false;
+                lockUI.style.display = 'none';
+                player.inputAnswer = '';
+                document.getElementById(`ans-${player.id}`).innerText = '';
+            }, 1500);
+        }
+    }
+
+    function updateRacing(player) {
+        const car = document.getElementById(`car-${player.id}`);
+        const progress = (player.correct / quizLimit) * 85; // 85%까지 이동
+        car.style.left = progress + '%';
+        
+        // 정답 효과
+        const rect = car.getBoundingClientRect();
+        createParticles(rect.left, rect.top + 20, '#f1c40f', 15);
+    }
+
+    function finishPlayer(player) {
+        player.isFinished = true;
+        player.endTime = Date.now();
+
+        if (mode === 'practice') {
+            document.getElementById(`next-ui-${player.id}`).style.display = 'flex';
+        } else {
+            // 게임 모드: 누군가 한 명이라도 끝나면 종료 처리 (또는 모두 끝날때까지 대기)
+            // 여기서는 요청하신 '가장 먼저 푸는 사람이 승리'를 위해 즉시 종료
+            isGameOver = true;
+            showResults(player.id);
+        }
+    }
+
+    function resetPlayer(pid) {
+        const player = players[pid - 1];
+        player.correct = 0;
+        player.isFinished = false;
+        player.startTime = Date.now();
+        document.getElementById(`next-ui-${pid}`).style.display = 'none';
+        document.getElementById(`car-${pid}`).style.left = '0%';
+        nextProblem(player);
+    }
+
+    function showResults(winnerId) {
+        const screen = document.getElementById('result-screen');
+        const rankList = document.getElementById('rank-list');
+        screen.style.display = 'flex';
+        document.getElementById('winner-text').innerText = `🏆 PLAYER ${winnerId} WIN!`;
+
+        players.sort((a, b) => b.correct - a.correct);
+        
+        rankList.innerHTML = players.map((p, i) => `
+            <div style="background:rgba(255,255,255,0.1); margin:10px; padding:15px; border-radius:10px; display:flex; justify-content:space-between; font-size:1.5rem;">
+                <span>${i+1}위: PLAYER ${p.id}</span>
+                <span>맞힌 개수: ${p.correct}</span>
+            </div>
+        `).join('');
+    }
+
+    function createParticles(x, y, color, count) {
+        for (let i = 0; i < count; i++) {
+            const p = document.createElement('div');
+            p.className = 'particle';
+            p.style.left = x + 'px';
+            p.style.top = y + 'px';
+            p.style.width = Math.random() * 8 + 4 + 'px';
+            p.style.height = p.style.width;
+            p.style.backgroundColor = color;
+            
+            const angle = Math.random() * Math.PI * 2;
+            const dist = Math.random() * 50 + 20;
+            const tx = Math.cos(angle) * dist;
+            const ty = Math.sin(angle) * dist;
+
+            document.body.appendChild(p);
+
+            p.animate([
+                { transform: 'translate(0, 0)', opacity: 1 },
+                { transform: `translate(${tx}px, ${ty}px)`, opacity: 0 }
+            ], {
+                duration: 600,
+                easing: 'cubic-bezier(0, .9, .57, 1)'
+            }).onfinish = () => p.remove();
+        }
+    }
+</script>
+
+</body>
+</html>

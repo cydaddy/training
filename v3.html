@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>구구단 나눗셈 배틀 레이싱</title>
+    <style>
+        :root {
+            --primary: #4a90e2; --success: #2ecc71; --error: #e74c3c;
+            --warning: #f1c40f; --dark: #1a1a2e; --light: #ecf0f1;
+        }
+
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            overflow: hidden; font-family: 'Pretendard', sans-serif;
+            background: var(--dark); color: white;
+        }
+
+        /* 설정 화면 */
+        #setup-screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            background: rgba(0,0,0,0.9); z-index: 1000;
+        }
+        .setup-box {
+            background: rgba(255,255,255,0.1); padding: 40px; border-radius: 30px;
+            text-align: center; border: 2px solid var(--primary); backdrop-filter: blur(10px);
+        }
+
+        button {
+            padding: 15px 25px; font-size: 1.2rem; margin: 5px; cursor: pointer;
+            border: none; border-radius: 12px; transition: 0.2s; font-weight: bold;
+        }
+        .btn-mode.selected { background: var(--primary); color: white; transform: scale(1.1); }
+        .btn-split.selected { background: var(--warning); color: #000; transform: scale(1.1); }
+        .btn-start { background: var(--success); color: white; width: 100%; margin-top: 30px; font-size: 1.8rem; }
+
+        /* 게임 메인 레이아웃 */
+        #main-container { display: flex; flex-direction: column; width: 100%; height: 100%; }
+
+        /* 공통 레이싱 트랙 (게임모드 전용) */
+        #shared-racing-track {
+            height: 250px; background: #333; position: relative;
+            border-bottom: 5px solid #555; display: none;
+            background-image: linear-gradient(#444 2px, transparent 2px);
+            background-size: 100% 40px;
+        }
+        .track-lane { height: 40px; border-bottom: 1px dashed #555; position: relative; width: 100%; }
+        .car {
+            position: absolute; left: 0; font-size: 2.5rem; transition: left 0.5s ease-out;
+            display: flex; align-items: center; gap: 10px; z-index: 10;
+        }
+        .car-label { font-size: 1rem; background: rgba(0,0,0,0.7); padding: 2px 8px; border-radius: 10px; }
+        .finish-line-shared {
+            position: absolute; right: 50px; top: 0; bottom: 0; width: 20px;
+            background: repeating-linear-gradient(0deg, #fff, #fff 10px, #000 10px, #000 20px);
+        }
+
+        /* 하단 문제 풀이 영역 */
+        #column-area { flex: 1; display: flex; width: 100%; overflow: hidden; }
+        .player-column {
+            flex: 1; border-right: 2px solid rgba(255,255,255,0.1);
+            display: flex; flex-direction: column; position: relative;
+            background: #252545;
+        }
+
+        .quiz-section {
+            flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            padding: 20px; position: relative;
+        }
+        .problem { font-size: 3.5rem; font-weight: bold; margin-bottom: 20px; text-shadow: 2px 2px 10px rgba(0,0,0,0.5); }
+        .answer-box {
+            font-size: 4rem; width: 80%; height: 100px; background: rgba(255,255,255,0.1);
+            border-bottom: 4px solid var(--primary); display: flex; align-items: center; justify-content: center;
+        }
+
+        /* 키패드 */
+        .keypad {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px;
+            padding: 10px; background: rgba(0,0,0,0.4);
+        }
+        .key {
+            height: 60px; background: #eee; color: #222; border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.5rem; font-weight: bold; cursor: pointer; user-select: none;
+        }
+        .key:active { transform: scale(0.9); background: var(--primary); color: white; }
+        .key.clr { background: var(--error); color: white; }
+        .key.ent { background: var(--success); color: white; }
+
+        /* 오답 페널티 & 연습 모드 종료 레이어 */
+        .lock-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(231, 76, 60, 0.85); display: none;
+            flex-direction: column; align-items: center; justify-content: center;
+            z-index: 100; font-size: 2rem; font-weight: bold; text-align: center;
+        }
+        .next-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(46, 204, 113, 0.95); display: none;
+            flex-direction: column; align-items: center; justify-content: center;
+            z-index: 110; text-align: center;
+        }
+
+        #result-screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95); display: none; flex-direction: column;
+            align-items: center; justify-content: center; z-index: 2000;
+        }
+    </style>
+</head>
+<body>
+
+<div id="setup-screen">
+    <div class="setup-box">
+        <h1 style="font-size: 3rem; color: var(--warning); margin-bottom: 10px;">🔢 나눗셈 레이싱 배틀</h1>
+        
+        <div style="margin: 20px;">
+            <p>모드 설정</p>
+            <button class="btn-mode selected" onclick="setMode('practice', this)">🏠 연습 모드</button>
+            <button class="btn-mode" onclick="setMode('game', this)">🏎️ 게임 모드</button>
+        </div>
+
+        <div style="margin: 20px;">
+            <p>참여 인원</p>
+            <button class="btn-split selected" onclick="setSplit(1, this)">1명</button>
+            <button class="btn-split" onclick="setSplit(2, this)">2명</button>
+            <button class="btn-split" onclick="setSplit(3, this)">3명</button>
+            <button class="btn-split" onclick="setSplit(4, this)">4명</button>
+            <button class="btn-split" onclick="setSplit(5, this)">5명</button>
+            <button class="btn-split" onclick="setSplit(6, this)">6명</button>
+        </div>
+
+        <div style="margin: 20px;">
+            <label>목표 문제 수: </label>
+            <input type="number" id="quiz-count" value="10" min="1" max="50" style="padding:10px; font-size:1.2rem; width:80px; text-align:center; border-radius:10px;">
+        </div>
+
+        <button class="btn-start" onclick="startGame()">학습 시작!</button>
+    </div>
+</div>
+
+<div id="main-container">
+    <div id="shared-racing-track">
+        <div class="finish-line-shared"></div>
+        <div id="car-lanes-container"></div>
+    </div>
+    <div id="column-area"></div>
+</div>
+
+<div id="result-screen">
+    <h1 style="font-size: 4rem; color: var(--warning);">🏁 경기 종료!</h1>
+    <div id="rank-list" style="width: 80%; max-width: 700px; margin-bottom: 30px;"></div>
+    <button class="btn-start" style="width:auto; padding: 20px 60px;" onclick="location.reload()">처음으로</button>
+</div>
+
+<script>
+    let mode = 'practice';
+    let splitCount = 1;
+    let quizLimit = 10;
+    let players = [];
+    
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playSound(freq, type, dur) {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type; osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + dur);
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.start(); osc.stop(audioCtx.currentTime + dur);
+    }
+
+    function setMode(m, btn) {
+        mode = m;
+        document.querySelectorAll('.btn-mode').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+    }
+
+    function setSplit(s, btn) {
+        splitCount = s;
+        document.querySelectorAll('.btn-split').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+    }
+
+    function startGame() {
+        quizLimit = parseInt(document.getElementById('quiz-count').value);
+        document.getElementById('setup-screen').style.display = 'none';
+        
+        const columnArea = document.getElementById('column-area');
+        const laneContainer = document.getElementById('car-lanes-container');
+        const track = document.getElementById('shared-racing-track');
+        
+        columnArea.innerHTML = '';
+        laneContainer.innerHTML = '';
+        players = [];
+
+        if (mode === 'game') {
+            track.style.display = 'block';
+        }
+
+        for (let i = 0; i < splitCount; i++) {
+            const player = {
+                id: i + 1,
+                correct: 0,
+                targetAnswer: 0,
+                inputAnswer: '',
+                isLocked: false,
+                isFinished: false,
+                startTime: Date.now(),
+                endTime: null
+            };
+            players.push(player);
+            
+            // 문제 풀이 컬럼 생성
+            createPlayerUI(player);
+            
+            // 게임모드일 때만 레이싱 레인 생성
+            if (mode === 'game') {
+                const lane = document.createElement('div');
+                lane.className = 'track-lane';
+                lane.innerHTML = `<div class="car" id="car-${player.id}" style="top:0px;">
+                                    <span class="car-label">학생 ${player.id}</span> 🏎️
+                                  </div>`;
+                laneContainer.appendChild(lane);
+            }
+            
+            nextProblem(player);
+        }
+    }
+
+    function createPlayerUI(player) {
+        const col = document.createElement('div');
+        col.className = 'player-column';
+        col.id = `player-col-${player.id}`;
+        col.innerHTML = `
+            <div style="text-align:center; padding:10px; background:rgba(0,0,0,0.3); font-weight:bold;">학생 ${player.id}</div>
+            <div class="quiz-section">
+                <div class="problem" id="prob-${player.id}">? ÷ ?</div>
+                <div class="answer-box" id="ans-${player.id}"></div>
+                <div class="lock-overlay" id="lock-${player.id}">
+                    <div style="font-size:4rem">⚠️</div>
+                    <div>오답! 1.5초 잠금</div>
+                </div>
+                <div class="next-overlay" id="next-ui-${player.id}">
+                    <h2 style="font-size:2.5rem">참 잘했어요! 👍</h2>
+                    <button class="btn-start" style="background:white; color:black; width:80%" onclick="resetPlayer(${player.id})">다음 학생 시작</button>
+                </div>
+            </div>
+            <div class="keypad">
+                ${[1,2,3,4,5,6,7,8,9,0].map(n => `<div class="key" onclick="handleInput(${player.id}, '${n}')">${n}</div>`).join('')}
+                <div class="key clr" onclick="handleInput(${player.id}, 'C')">지우기</div>
+                <div class="key ent" onclick="handleInput(${player.id}, 'E')">확인</div>
+            </div>
+        `;
+        document.getElementById('column-area').appendChild(col);
+    }
+
+    function nextProblem(player) {
+        const a = Math.floor(Math.random() * 9) + 1;
+        const b = Math.floor(Math.random() * 9) + 1;
+        player.targetAnswer = b;
+        player.inputAnswer = '';
+        document.getElementById(`prob-${player.id}`).innerText = `${a * b} ÷ ${a} = ?`;
+        document.getElementById(`ans-${player.id}`).innerText = '';
+    }
+
+    function handleInput(pid, key) {
+        const player = players[pid - 1];
+        if (player.isLocked || player.isFinished) return;
+
+        if (key === 'C') {
+            player.inputAnswer = '';
+        } else if (key === 'E') {
+            if (player.inputAnswer !== '') checkAnswer(player);
+        } else {
+            if (player.inputAnswer.length < 2) player.inputAnswer += key;
+        }
+        document.getElementById(`ans-${player.id}`).innerText = player.inputAnswer;
+    }
+
+    function checkAnswer(player) {
+        const isCorrect = parseInt(player.inputAnswer) === player.targetAnswer;
+
+        if (isCorrect) {
+            player.correct++;
+            playSound(523, 'sine', 0.2);
+            if (mode === 'game') updateRacing(player);
+            
+            if (player.correct >= quizLimit) {
+                finishPlayer(player);
+            } else {
+                nextProblem(player);
+            }
+        } else {
+            player.isLocked = true;
+            playSound(150, 'sawtooth', 0.5);
+            document.getElementById(`lock-${player.id}`).style.display = 'flex';
+            setTimeout(() => {
+                player.isLocked = false;
+                document.getElementById(`lock-${player.id}`).style.display = 'none';
+                player.inputAnswer = '';
+                document.getElementById(`ans-${player.id}`).innerText = '';
+            }, 1500);
+        }
+    }
+
+    function updateRacing(player) {
+        const car = document.getElementById(`car-${player.id}`);
+        const progress = (player.correct / quizLimit) * 85;
+        car.style.left = progress + '%';
+    }
+
+    function finishPlayer(player) {
+        player.isFinished = true;
+        player.endTime = Date.now();
+
+        if (mode === 'practice') {
+            document.getElementById(`next-ui-${player.id}`).style.display = 'flex';
+        } else {
+            // 게임모드: 모든 학생이 끝났는지 확인
+            const finishedAll = players.every(p => p.isFinished);
+            if (finishedAll) {
+                setTimeout(showResults, 1000);
+            } else {
+                // 아직 덜 푼 학생들을 위해 대기 메시지
+                const overlay = document.getElementById(`next-ui-${player.id}`);
+                overlay.querySelector('h2').innerText = "완주! 친구들을 기다려요!";
+                overlay.querySelector('button').style.display = "none";
+                overlay.style.display = "flex";
+            }
+        }
+    }
+
+    function resetPlayer(pid) {
+        const player = players[pid - 1];
+        player.correct = 0;
+        player.isFinished = false;
+        player.startTime = Date.now();
+        document.getElementById(`next-ui-${pid}`).style.display = 'none';
+        nextProblem(player);
+    }
+
+    function showResults() {
+        const screen = document.getElementById('result-screen');
+        const rankList = document.getElementById('rank-list');
+        screen.style.display = 'flex';
+
+        // 걸린 시간 순으로 정렬 (정답 수는 모두 동일하므로)
+        const sorted = [...players].sort((a, b) => (a.endTime - a.startTime) - (b.endTime - b.startTime));
+
+        rankList.innerHTML = sorted.map((p, i) => {
+            const time = ((p.endTime - p.startTime) / 1000).toFixed(2);
+            return `
+                <div style="background:rgba(255,255,255,0.1); margin:10px; padding:20px; border-radius:15px; display:flex; justify-content:space-between; font-size:1.8rem; border-left: 10px solid ${i===0?'var(--warning)':'#555'}">
+                    <span>${i+1}위: 학생 ${p.id}</span>
+                    <span>⏱️ ${time}초</span>
+                </div>
+            `;
+        }).join('');
+    }
+</script>
+
+</body>
+</html>
