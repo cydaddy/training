@@ -1,0 +1,72 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build_and_deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Prepare Site Directory
+        run: |
+          mkdir _site
+          rsync -a --exclude='.git' --exclude='seoul-heritage' --exclude='*.zip' --exclude='.github' ./ _site/
+          
+          mkdir -p _site/seoul-heritage/v1
+          mkdir -p _site/seoul-heritage/v2
+          mkdir -p _site/seoul-heritage/v3
+
+      - name: Build v1
+        run: |
+          cd seoul-heritage/v1
+          npm install
+          npm run build
+          cp -r dist/* ../../_site/seoul-heritage/v1/
+
+      - name: Build v2
+        run: |
+          cd seoul-heritage/v2
+          npm install
+          npm run build
+          cp -r dist/* ../../_site/seoul-heritage/v2/
+
+      - name: Build v3
+        run: |
+          cd seoul-heritage/v3
+          npm install
+          npm run build
+          cp -r dist/* ../../_site/seoul-heritage/v3/
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './_site'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
