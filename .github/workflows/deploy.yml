@@ -37,6 +37,7 @@ jobs:
           mkdir -p _site/seoul-heritage/v1
           mkdir -p _site/seoul-heritage/v2
           mkdir -p _site/seoul-heritage/v3
+          mkdir -p _site/seoul-heritage/v4
 
       - name: Build v1
         run: |
@@ -58,6 +59,13 @@ jobs:
           npm install
           npm run build
           cp -r dist/* ../../_site/seoul-heritage/v3/
+
+      - name: Build v4
+        run: |
+          cd seoul-heritage/v4
+          npm install
+          npm run build
+          cp -r dist/* ../../_site/seoul-heritage/v4/
 
       - name: Setup Pages
         uses: actions/configure-pages@v5

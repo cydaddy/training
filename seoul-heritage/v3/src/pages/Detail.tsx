@@ -59,8 +59,17 @@ export default function Detail() {
               </div>
             </div>
 
-            <div className="aspect-video bg-gray-100 border-4 border-black mb-12 flex items-center justify-center relative overflow-hidden">
-              <img src={heritage.imageUrl} alt={heritage.name} className="w-full h-full object-cover" />
+            <div className="aspect-video bg-gray-100 border-4 border-black mb-12 flex items-center justify-center relative">
+              <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'repeating-linear-gradient(45deg, #000 25%, transparent 25%, transparent 75%, #000 75%, #000), repeating-linear-gradient(45deg, #000 25%, #fff 25%, #fff 75%, #000 75%, #000)', backgroundPosition: '0 0, 10px 10px', backgroundSize: '20px 20px' }} />
+              <div className="text-center z-10 bg-white p-6 border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] rotate-2">
+                <Sparkles className="text-memphis-pink w-12 h-12 mx-auto mb-2" />
+                <p className="font-display text-2xl text-black">
+                  {heritage.name} 사진 자리
+                </p>
+                <p className="font-cute text-lg mt-2 text-gray-600">
+                  /public/assets/images/ 폴더에 이미지를 넣어주세요
+                </p>
+              </div>
             </div>
 
             <div className="space-y-12">

@@ -45,10 +45,7 @@ export default function Home() {
                   
                   <div className="p-6 flex-grow flex flex-col">
                     <div className="aspect-video bg-gray-100 border-4 border-black mb-4 flex items-center justify-center relative overflow-hidden">
-                      <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(#000 2px, transparent 2px)', backgroundSize: '15px 15px' }} />
-                      <span className="font-cute text-xl text-gray-400 z-10 bg-white px-3 py-1 border-2 border-black">
-                        사진을 넣어주세요
-                      </span>
+                      <img src={heritage.imageUrl} alt={heritage.name} className="w-full h-full object-cover" />
                     </div>
                     
                     <div className="flex justify-between items-start mb-2">

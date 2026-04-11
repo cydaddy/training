@@ -1,49 +1,53 @@
-@import url('https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Jua&family=Noto+Sans+KR:wght@400;700;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Space+Grotesk:wght@300;700&display=swap');
 @import "tailwindcss";
 
 @theme {
-  --color-memphis-yellow: #FFD166;
-  --color-memphis-pink: #EF476F;
-  --color-memphis-teal: #06D6A0;
-  --color-memphis-blue: #118AB2;
-  --color-memphis-dark: #073B4C;
-  --color-memphis-bg: #F8F9FA;
+  --color-vapor-pink: #ff71ce;
+  --color-vapor-blue: #01cdfe;
+  --color-vapor-cyan: #05ffa1;
+  --color-vapor-purple: #b967ff;
+  --color-vapor-yellow: #fffb96;
+  --color-vapor-dark: #240b36;
   
-  --font-sans: "Noto Sans KR", sans-serif;
-  --font-display: "Black Han Sans", sans-serif;
-  --font-cute: "Jua", sans-serif;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Space Grotesk", sans-serif;
 }
 
 @layer base {
   body {
-    @apply bg-memphis-bg text-black min-h-screen overflow-x-hidden font-sans;
-    background-image: radial-gradient(#000000 2px, transparent 2px);
-    background-size: 30px 30px;
+    @apply bg-vapor-dark text-white min-h-screen overflow-x-hidden;
+    background-image: 
+      linear-gradient(rgba(36, 11, 54, 0.8), rgba(36, 11, 54, 0.8)),
+      linear-gradient(to right, rgba(185, 103, 255, 0.1) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(185, 103, 255, 0.1) 1px, transparent 1px);
+    background-size: 100% 100%, 40px 40px, 40px 40px;
   }
 }
 
-.memphis-card {
-  @apply bg-white border-4 border-black transition-all duration-200 ease-in-out;
-  box-shadow: 8px 8px 0px 0px #000000;
+.vapor-gradient-text {
+  @apply bg-clip-text text-transparent bg-gradient-to-r from-vapor-pink via-vapor-purple to-vapor-blue;
 }
 
-.memphis-card:hover {
-  transform: translate(-4px, -4px);
-  box-shadow: 12px 12px 0px 0px #000000;
+.vapor-card {
+  @apply bg-vapor-dark/60 border-2 border-vapor-pink shadow-[5px_5px_0px_0px_rgba(1,205,254,1)] backdrop-blur-sm;
 }
 
-.memphis-button {
-  @apply border-4 border-black font-cute text-xl px-6 py-3 transition-all duration-100 ease-in-out inline-flex items-center justify-center;
-  box-shadow: 4px 4px 0px 0px #000000;
+.vapor-button {
+  @apply px-6 py-2 border-2 border-vapor-cyan text-vapor-cyan font-bold uppercase tracking-widest transition-all hover:bg-vapor-cyan hover:text-vapor-dark hover:shadow-[0_0_15px_rgba(5,255,161,0.5)];
 }
 
-.memphis-button:active {
-  transform: translate(4px, 4px);
-  box-shadow: 0px 0px 0px 0px #000000;
+@keyframes scanline {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100%); }
 }
 
-.memphis-title {
-  @apply font-display tracking-wide text-white;
-  text-shadow: 4px 4px 0px #000000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
+.scanline {
+  width: 100%;
+  height: 100px;
+  z-index: 50;
+  background: linear-gradient(to bottom, transparent, rgba(185, 103, 255, 0.1), transparent);
+  opacity: 0.1;
+  position: fixed;
+  pointer-events: none;
+  animation: scanline 8s linear infinite;
 }
-
