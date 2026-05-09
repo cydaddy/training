@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>로컬 스토리지 마법사 🧙‍♂️</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Jua&display=swap');
+
+        :root {
+            --primary: #FF6B6B;
+            --secondary: #4ECDC4;
+            --background: #F7FFF7;
+            --text: #2C3E50;
+            --card-bg: rgba(255, 255, 255, 0.9);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Jua', sans-serif;
+            background: linear-gradient(135deg, var(--secondary), #FFE66D);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 500px;
+            backdrop-filter: blur(10px);
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+
+        .container:hover {
+            transform: translateY(-5px);
+        }
+
+        h1 {
+            color: var(--primary);
+            margin-bottom: 10px;
+            font-size: 2.5rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+
+        p.subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.2rem;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 1.1rem;
+            color: var(--text);
+        }
+
+        input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-family: 'Jua', sans-serif;
+            transition: border-color 0.3s ease;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--secondary);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 25px;
+        }
+
+        button {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.2rem;
+            font-family: 'Jua', sans-serif;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: white;
+        }
+
+        .btn-save {
+            background-color: var(--primary);
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.4);
+        }
+
+        .btn-save:hover {
+            background-color: #ff5252;
+            transform: scale(1.05);
+        }
+
+        .btn-clear {
+            background-color: #95a5a6;
+            box-shadow: 0 4px 15px rgba(149, 165, 166, 0.4);
+        }
+
+        .btn-clear:hover {
+            background-color: #7f8c8d;
+            transform: scale(1.05);
+        }
+
+        .result-area {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 15px;
+            border: 2px dashed var(--secondary);
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .result-area.active {
+            display: block;
+        }
+
+        .result-area h2 {
+            color: var(--secondary);
+            margin-bottom: 10px;
+        }
+
+        .saved-data {
+            font-size: 1.5rem;
+            color: var(--primary);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: rgba(44, 62, 80, 0.9);
+            color: white;
+            padding: 15px 30px;
+            border-radius: 30px;
+            font-size: 1.1rem;
+            transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            opacity: 0;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>로컬 스토리지 마법사 🧙‍♂️</h1>
+        <p class="subtitle">새로고침해도 사라지지 않는 마법의 상자!</p>
+
+        <div class="input-group">
+            <label for="wizardName">마법사 이름 (선생님 성함)</label>
+            <input type="text" id="wizardName" placeholder="이름을 입력하세요">
+        </div>
+
+        <div class="input-group">
+            <label for="magicWord">마법 주문 (나의 다짐)</label>
+            <input type="text" id="magicWord" placeholder="예: 오늘도 화이팅!">
+        </div>
+
+        <div class="button-group">
+            <button class="btn-save" onclick="saveData()">✨ 마법 저장하기</button>
+            <button class="btn-clear" onclick="clearData()">🗑️ 마법 지우기</button>
+        </div>
+
+        <div class="result-area" id="resultArea">
+            <h2>저장된 마법 정보</h2>
+            <p>이름: <span class="saved-data" id="savedName"></span></p>
+            <p>주문: <span class="saved-data" id="savedWord"></span></p>
+            <p style="margin-top: 15px; font-size: 0.9rem; color: #666;">
+                💡 지금 새로고침(F5)을 눌러보세요! 데이터가 그대로 남아있습니다.
+            </p>
+        </div>
+    </div>
+
+    <div class="toast" id="toast">메시지</div>
+
+    <script>
+        // 페이지가 로드될 때 저장된 데이터가 있는지 확인합니다.
+        window.onload = function() {
+            loadData();
+        };
+
+        function saveData() {
+            const name = document.getElementById('wizardName').value;
+            const word = document.getElementById('magicWord').value;
+
+            if (!name || !word) {
+                showToast("이름과 주문을 모두 입력해주세요! 🚨");
+                return;
+            }
+
+            // localStorage에 데이터 저장
+            localStorage.setItem('wizardName', name);
+            localStorage.setItem('magicWord', word);
+
+            showToast("마법이 성공적으로 저장되었습니다! ✨");
+            loadData();
+        }
+
+        function loadData() {
+            // localStorage에서 데이터 불러오기
+            const savedName = localStorage.getItem('wizardName');
+            const savedWord = localStorage.getItem('magicWord');
+
+            const resultArea = document.getElementById('resultArea');
+
+            if (savedName && savedWord) {
+                document.getElementById('savedName').innerText = savedName;
+                document.getElementById('savedWord').innerText = savedWord;
+                resultArea.classList.add('active');
+                
+                // 입력창에도 값 채워주기
+                document.getElementById('wizardName').value = savedName;
+                document.getElementById('magicWord').value = savedWord;
+            } else {
+                resultArea.classList.remove('active');
+            }
+        }
+
+        function clearData() {
+            // localStorage 데이터 모두 삭제
+            localStorage.removeItem('wizardName');
+            localStorage.removeItem('magicWord');
+            
+            // 입력창 초기화
+            document.getElementById('wizardName').value = '';
+            document.getElementById('magicWord').value = '';
+
+            showToast("마법 상자가 깨끗하게 비워졌습니다! 🧹");
+            loadData();
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.innerText = message;
+            toast.classList.add('show');
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
