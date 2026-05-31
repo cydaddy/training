@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>가을 나무 탐험대 - 모달 vs 새 페이지</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React & React DOM UMD -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <!-- Babel for In-Browser JSX Compilation -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Nanum+Gothic:wght@400;700;800&display=swap');
+        body {
+            font-family: 'Inter', 'Nanum Gothic', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-orange-50">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState } = React;
+
+        // Custom SVG Icon Components to replace Lucide-React
+        const Leaf = ({ className, size = 24, fill = "none" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill={fill} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 3.5 1 9.8a7 7 0 0 1-13.9.2" />
+                <path d="M9 22v-4h-4" />
+            </svg>
+        );
+
+        const X = ({ className, size = 24 }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <path d="M18 6 6 18" />
+                <path d="m6 6 12 12" />
+            </svg>
+        );
+
+        const ArrowLeft = ({ className, size = 24 }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <path d="m12 19-7-7 7-7" />
+                <path d="M19 12H5" />
+            </svg>
+        );
+
+        const ExternalLink = ({ className, size = 24 }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <path d="M15 3h6v6" />
+                <path d="M10 14 21 3" />
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+            </svg>
+        );
+
+        const Info = ({ className, size = 24 }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <circle cx="12" cy="12" r="10" />
+                <path d="M12 16v-4" />
+                <path d="M12 8h.01" />
+            </svg>
+        );
+
+        const AutumnStudyApp = () => {
+            const [view, setView] = useState('home'); // 'home' or 'ginkgo'
+            const [isMapleModalOpen, setIsMapleModalOpen] = useState(false);
+
+            const mapleData = {
+                title: "🍁 알록달록 단풍나무",
+                description: "가을이 되면 잎이 빨갛게 변하는 나무예요. 잎의 모양이 마치 아기 손바닥처럼 생겼답니다.",
+                fact: "단풍나무 잎은 5개에서 7개로 갈라져 있어요!",
+                habitat: "주로 산이나 공원에서 볼 수 있어요."
+            };
+
+            const ginkgoData = {
+                title: "🟡 노란 은행나무",
+                description: "가을이 되면 온 세상이 노란색으로 물들어요. 부채 모양의 잎이 특징이에요.",
+                fact: "은행나무는 공룡 시대부터 살아온 아주 오래된 나무예요!",
+                habitat: "도시의 가로수로 아주 인기가 많아요."
+            };
+
+            const MapleModal = () => (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-60 backdrop-blur-sm transition-opacity">
+                    <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden transform transition-all scale-100">
+                        <div className="bg-orange-500 p-4 flex justify-between items-center text-white">
+                            <h3 className="text-xl font-bold flex items-center gap-2">
+                                <Info size={24} /> {mapleData.title}
+                            </h3>
+                            <button onClick={() => setIsMapleModalOpen(false)} className="hover:bg-orange-600 p-1 rounded-full transition-colors">
+                                <X size={24} />
+                            </button>
+                        </div>
+                        <div className="p-6">
+                            <p className="text-gray-700 leading-relaxed mb-4 text-lg">{mapleData.description}</p>
+                            <div className="bg-orange-50 p-5 rounded-xl border border-orange-100">
+                                <p className="text-orange-800 font-bold mb-1">💡 관찰 포인트:</p>
+                                <p className="text-orange-700">{mapleData.fact}</p>
+                            </div>
+                            <div className="mt-4 bg-red-50 p-5 rounded-xl border border-red-100">
+                                <p className="text-red-800 font-bold mb-1">📍 주로 어디에 있나요?</p>
+                                <p className="text-red-700">{mapleData.habitat}</p>
+                            </div>
+                        </div>
+                        <div className="p-4 border-t text-center">
+                            <button onClick={() => setIsMapleModalOpen(false)} className="bg-orange-500 text-white px-6 py-2 rounded-full font-bold hover:bg-orange-600 transition-colors">
+                                닫기
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+
+            if (view === 'home') {
+                return (
+                    <div className="min-h-screen bg-orange-50 font-sans p-6 md:p-12">
+                        <div className="max-w-4xl mx-auto">
+                            <header className="text-center mb-12">
+                                <h1 className="text-4xl md:text-5xl font-black text-orange-900 mb-4 flex justify-center items-center gap-3">
+                                    <Leaf className="text-orange-600" /> 가을 나무 탐험대
+                                    <Leaf className="text-orange-600" />
+                                </h1>
+                                <p className="text-orange-800 bg-orange-100 inline-block px-4 py-2 rounded-full font-medium">
+                                    모달과 새 페이지의 차이를 알아보아요!
+                                </p>
+                            </header>
+
+                            <div className="grid md:grid-cols-2 gap-8">
+                                <div className="bg-white p-8 rounded-[2rem] shadow-lg border-4 border-orange-200 hover:border-orange-400 transition-all group">
+                                    <div className="bg-red-100 w-16 h-16 rounded-2xl flex items-center justify-center mb-6 text-red-500 group-hover:scale-110 transition-transform">
+                                        <Leaf size={40} fill="currentColor" />
+                                    </div>
+                                    <h2 className="text-2xl font-bold text-gray-800 mb-2">단풍나무 조사하기</h2>
+                                    <p className="text-gray-600 mb-6 italic">"이 카드는 모달(Modal) 창으로 내용을 보여줘요."</p>
+                                    <button onClick={() => setIsMapleModalOpen(true)} className="w-full bg-red-500 text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-red-600 transition-colors shadow-md">
+                                        모달로 보기
+                                        <Info size={20} />
+                                    </button>
+                                </div>
+
+                                <div className="bg-white p-8 rounded-[2rem] shadow-lg border-4 border-yellow-200 hover:border-yellow-400 transition-all group">
+                                    <div className="bg-yellow-100 w-16 h-16 rounded-2xl flex items-center justify-center mb-6 text-yellow-500 group-hover:scale-110 transition-transform">
+                                        <Leaf size={40} fill="currentColor" />
+                                    </div>
+                                    <h2 className="text-2xl font-bold text-gray-800 mb-2">은행나무 조사하기</h2>
+                                    <p className="text-gray-600 mb-6 italic">"이 카드는 완전히 새로운 화면으로 넘어가요."</p>
+                                    <button onClick={() => setView('ginkgo')} className="w-full bg-yellow-500 text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-yellow-600 transition-colors shadow-md">
+                                        새 페이지로 보기
+                                        <ExternalLink size={20} />
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="mt-16 bg-white bg-opacity-50 p-6 rounded-2xl border border-dashed border-orange-300">
+                                <h3 className="font-bold text-orange-900 mb-2">💻 IT 용어 사전</h3>
+                                <ul className="text-sm text-orange-800 space-y-2">
+                                    <li>• <strong>모달 (Modal):</strong> 현재 페이지를 떠나지 않고 위에 작은 창을 띄우는 방식이에요. (간단한 정보 확인용)</li>
+                                    <li>• <strong>새 페이지 (Navigation):</strong> 다른 주소로 이동하여 화면 전체가 바뀌는 방식이에요. (많은 정보를 보여줄 때)</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        {isMapleModalOpen && <MapleModal />}
+                    </div>
+                );
+            }
+
+            return (
+                <div className="min-h-screen bg-white">
+                    <nav className="bg-yellow-500 text-white p-4 sticky top-0 flex items-center justify-between shadow-md">
+                        <button onClick={() => setView('home')} className="flex items-center gap-2 hover:bg-yellow-600 px-4 py-2 rounded-xl transition-colors font-bold">
+                            <ArrowLeft size={20} /> 뒤로가기
+                        </button>
+                        <span className="font-bold">은행나무 관찰 일지</span>
+                        <div className="w-24"></div>
+                    </nav>
+
+                    <main className="p-6 md:p-12 max-w-3xl mx-auto">
+                        <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                            <h1 className="text-4xl font-black text-gray-900 mb-8 border-l-8 border-yellow-400 pl-4">{ginkgoData.title}</h1>
+
+                            <section className="space-y-8">
+                                <article>
+                                    <h2 className="text-2xl font-bold text-yellow-600 mb-4 border-b-2 border-yellow-200 pb-1">나무 특징</h2>
+                                    <p className="text-gray-700 text-xl leading-relaxed">{ginkgoData.description}</p>
+                                </article>
+
+                                <article className="grid md:grid-cols-2 gap-4">
+                                    <div className="bg-yellow-50 p-6 rounded-3xl border border-yellow-100">
+                                        <h3 className="font-bold text-yellow-800 mb-2">살아있는 화석?</h3>
+                                        <p className="text-gray-700">{ginkgoData.fact}</p>
+                                    </div>
+                                    <div className="bg-green-50 p-6 rounded-3xl border border-green-100">
+                                        <h3 className="font-bold text-green-800 mb-2">어디서 살까요?</h3>
+                                        <p className="text-gray-700">{ginkgoData.habitat}</p>
+                                    </div>
+                                </article>
+
+                                <article className="bg-gray-50 p-8 rounded-[2rem]">
+                                    <h2 className="text-xl font-bold text-gray-800 mb-4">직접 관찰해보세요!</h2>
+                                    <ul className="list-disc list-inside space-y-3 text-gray-600">
+                                        <li>은행나무 잎을 주워 부채질을 해보세요.</li>
+                                        <li>은행 열매에서 왜 냄새가 나는지 생각해보세요.</li>
+                                        <li>잎의 노란색이 얼마나 진한지 색깔표를 만들어보세요.</li>
+                                    </ul>
+                                </article>
+                            </section>
+
+                            <footer className="mt-12 py-8 text-center border-t border-gray-100">
+                                <button onClick={() => setView('home')} className="text-yellow-600 font-bold hover:underline">
+                                    메인 화면으로 돌아가기
+                                </button>
+                            </footer>
+                        </div>
+                    </main>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<AutumnStudyApp />);
+    </script>
+</body>
+</html>

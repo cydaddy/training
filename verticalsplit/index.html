@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>구구단 나눗셈 4인 배틀</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles to handle specific layout needs and touch interactions */
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            /* Prevent scrolling */
+            background-color: #1a202c;
+            /* Tailwind gray-900 */
+            color: #f7fafc;
+            /* Tailwind gray-100 */
+            font-family: 'Inter', sans-serif;
+            touch-action: none;
+            /* Prevent default touch actions like pinch-zoom */
+        }
+
+        #game-container {
+            display: flex;
+            width: 100%;
+            height: 100%;
+        }
+
+        .player-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            border-right: 2px solid #4a5568;
+            /* Tailwind gray-700 */
+            position: relative;
+        }
+
+        .player-area:last-child {
+            border-right: none;
+        }
+
+        .player-header {
+            text-align: center;
+            padding: 10px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            background-color: #2d3748;
+            /* Tailwind gray-800 */
+            border-bottom: 2px solid #4a5568;
+        }
+
+        .score-display {
+            text-align: center;
+            font-size: 1.5rem;
+            padding: 10px;
+            color: #48bb78;
+            /* Tailwind green-500 */
+            font-weight: bold;
+        }
+
+        .problem-display {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-size: 3rem;
+            font-weight: bold;
+        }
+
+        .input-display {
+            height: 40px;
+            font-size: 2rem;
+            color: #e2e8f0;
+            /* Tailwind gray-200 */
+            margin-top: 10px;
+            min-width: 50px;
+            text-align: center;
+            border-bottom: 2px solid #a0aec0;
+            /* Tailwind gray-400 */
+        }
+
+        .keypad {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 5px;
+            padding: 10px;
+            background-color: #2d3748;
+            /* Tailwind gray-800 */
+        }
+
+        .key {
+            background-color: #4a5568;
+            /* Tailwind gray-700 */
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.5rem;
+            padding: 15px 0;
+            cursor: pointer;
+            transition: background-color 0.1s;
+            touch-action: manipulation;
+            /* Optimize for touch */
+            user-select: none;
+        }
+
+        .key:active,
+        .key.active-touch {
+            background-color: #718096;
+            /* Tailwind gray-500 */
+        }
+
+        .key.del {
+            background-color: #e53e3e;
+            /* Tailwind red-600 */
+        }
+
+        .key.del:active,
+        .key.del.active-touch {
+            background-color: #fc8181;
+            /* Tailwind red-400 */
+        }
+
+        .key.enter {
+            background-color: #3182ce;
+            /* Tailwind blue-600 */
+        }
+
+        .key.enter:active,
+        .key.enter.active-touch {
+            background-color: #63b3ed;
+            /* Tailwind blue-400 */
+        }
+
+        /* Player specific colors */
+        #player1 .player-header {
+            color: #f56565;
+        }
+
+        /* Red */
+        #player2 .player-header {
+            color: #4299e1;
+        }
+
+        /* Blue */
+        #player3 .player-header {
+            color: #48bb78;
+        }
+
+        /* Green */
+        #player4 .player-header {
+            color: #ed8936;
+        }
+
+        /* Orange */
+
+        #overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+        }
+
+        .feedback {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 4rem;
+            font-weight: bold;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s;
+        }
+
+        .feedback.correct {
+            color: #48bb78;
+        }
+
+        .feedback.wrong {
+            color: #e53e3e;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="game-container">
+        <!-- Players will be injected here -->
+    </div>
+
+    <div id="overlay">
+        <h1 class="text-5xl font-bold mb-8 text-blue-400 text-center">구구단 나눗셈 배틀</h1>
+        <p class="text-xl mb-8 text-gray-300 text-center max-w-md">화면을 4분할하여 경쟁합니다. 빨리 정답을 입력하세요!</p>
+        <div class="flex gap-4 mb-8">
+            <div class="flex flex-col items-center">
+                <label for="timeLimit" class="mb-2 text-gray-400">게임 시간 (초)</label>
+                <input type="number" id="timeLimit" value="60" min="10" max="300"
+                    class="w-24 p-2 rounded bg-gray-700 text-white text-center border border-gray-600">
+            </div>
+            <div class="flex flex-col items-center">
+                <label for="targetScore" class="mb-2 text-gray-400">목표 점수</label>
+                <input type="number" id="targetScore" value="20" min="5" max="100"
+                    class="w-24 p-2 rounded bg-gray-700 text-white text-center border border-gray-600">
+            </div>
+        </div>
+        <button id="startBtn"
+            class="px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-full text-2xl font-bold shadow-lg transition-transform transform hover:scale-105 active:scale-95">
+            게임 시작
+        </button>
+        <div id="winner-announcement" class="hidden mt-8 text-4xl font-bold text-yellow-400"></div>
+    </div>
+
+    <script>
+        const NUM_PLAYERS = 4;
+        let gameActive = false;
+        let timerInterval;
+        let remainingTime;
+        let targetScore;
+
+        const players = [];
+
+        // Player Class to manage individual state
+        class Player {
+            constructor(id, name, colorClass) {
+                this.id = id;
+                this.name = name;
+                this.score = 0;
+                this.currentInput = "";
+                this.currentProblem = { a: 0, b: 0, answer: 0 };
+                this.colorClass = colorClass;
+
+                this.element = this.createDOM();
+                this.scoreEl = this.element.querySelector('.score-display span');
+                this.problemEl = this.element.querySelector('.problem-text');
+                this.inputEl = this.element.querySelector('.input-display');
+                this.feedbackEl = this.element.querySelector('.feedback');
+
+                this.bindEvents();
+            }
+
+            createDOM() {
+                const div = document.createElement('div');
+                div.className = 'player-area';
+                div.id = `player${this.id}`;
+                div.innerHTML = `
+                    <div class="player-header">${this.name}</div>
+                    <div class="score-display">점수: <span>0</span></div>
+                    <div class="problem-display">
+                        <div class="problem-text">? ÷ ?</div>
+                        <div class="input-display"></div>
+                    </div>
+                    <div class="feedback"></div>
+                    <div class="keypad">
+                        <button class="key" data-val="1">1</button>
+                        <button class="key" data-val="2">2</button>
+                        <button class="key" data-val="3">3</button>
+                        <button class="key" data-val="4">4</button>
+                        <button class="key" data-val="5">5</button>
+                        <button class="key" data-val="6">6</button>
+                        <button class="key" data-val="7">7</button>
+                        <button class="key" data-val="8">8</button>
+                        <button class="key" data-val="9">9</button>
+                        <button class="key del" data-action="del">지움</button>
+                        <button class="key" data-val="0">0</button>
+                        <button class="key enter" data-action="enter">입력</button>
+                    </div>
+                `;
+                return div;
+            }
+
+            bindEvents() {
+                const keys = this.element.querySelectorAll('.key');
+                keys.forEach(key => {
+                    // Handle both touch and mouse events for better responsiveness
+                    const handleInput = (e) => {
+                        e.preventDefault(); // Prevent double firing on touch devices
+                        if (!gameActive) return;
+
+                        const val = key.getAttribute('data-val');
+                        const action = key.getAttribute('data-action');
+
+                        // Visual feedback for tap
+                        key.classList.add('active-touch');
+                        setTimeout(() => key.classList.remove('active-touch'), 100);
+
+                        if (val !== null) {
+                            // Max input length 3
+                            if (this.currentInput.length < 3) {
+                                this.currentInput += val;
+                                this.updateDisplay();
+                            }
+                        } else if (action === 'del') {
+                            this.currentInput = this.currentInput.slice(0, -1);
+                            this.updateDisplay();
+                        } else if (action === 'enter') {
+                            this.checkAnswer();
+                        }
+                    };
+
+                    key.addEventListener('touchstart', handleInput, { passive: false });
+                    key.addEventListener('mousedown', handleInput);
+                });
+            }
+
+            generateProblem() {
+                // Generate a multiplication problem first (e.g., a * b = c)
+                // We want division within multiplication tables (1~9)
+                const divisor = Math.floor(Math.random() * 9) + 1; // 1 to 9
+                const quotient = Math.floor(Math.random() * 9) + 1; // 1 to 9
+                const dividend = divisor * quotient;
+
+                this.currentProblem = {
+                    dividend: dividend,
+                    divisor: divisor,
+                    answer: quotient
+                };
+
+                this.problemEl.textContent = `${dividend} ÷ ${divisor}`;
+                this.currentInput = "";
+                this.updateDisplay();
+            }
+
+            updateDisplay() {
+                this.inputEl.textContent = this.currentInput;
+            }
+
+            checkAnswer() {
+                if (this.currentInput === "") return;
+
+                const userAnswer = parseInt(this.currentInput, 10);
+                if (userAnswer === this.currentProblem.answer) {
+                    this.score++;
+                    this.scoreEl.textContent = this.score;
+                    this.showFeedback('O', 'correct');
+                    this.generateProblem();
+                    checkWinCondition();
+                } else {
+                    // Optional: penalty for wrong answer
+                    this.score = Math.max(0, this.score - 1);
+                    this.scoreEl.textContent = this.score;
+                    this.currentInput = ""; // Clear input on wrong answer
+                    this.updateDisplay();
+                    this.showFeedback('X', 'wrong');
+                }
+            }
+
+            showFeedback(text, type) {
+                this.feedbackEl.textContent = text;
+                this.feedbackEl.className = `feedback ${type}`;
+                this.feedbackEl.style.opacity = '1';
+                setTimeout(() => {
+                    this.feedbackEl.style.opacity = '0';
+                }, 500);
+            }
+
+            reset() {
+                this.score = 0;
+                this.scoreEl.textContent = "0";
+                this.currentInput = "";
+                this.updateDisplay();
+            }
+        }
+
+        const container = document.getElementById('game-container');
+        const overlay = document.getElementById('overlay');
+        const startBtn = document.getElementById('startBtn');
+        const winnerAnnounce = document.getElementById('winner-announcement');
+        const timeInput = document.getElementById('timeLimit');
+        const scoreInput = document.getElementById('targetScore');
+
+        // Initialize Players
+        const playerNames = ["Player 1", "Player 2", "Player 3", "Player 4"];
+        const playerColors = ["text-red-500", "text-blue-500", "text-green-500", "text-orange-500"];
+
+        for (let i = 0; i < NUM_PLAYERS; i++) {
+            const p = new Player(i + 1, playerNames[i], playerColors[i]);
+            players.push(p);
+            container.appendChild(p.element);
+        }
+
+        function startGame() {
+            remainingTime = parseInt(timeInput.value, 10);
+            targetScore = parseInt(scoreInput.value, 10);
+
+            if (isNaN(remainingTime) || remainingTime < 10) remainingTime = 60;
+            if (isNaN(targetScore) || targetScore < 5) targetScore = 20;
+
+            overlay.style.display = 'none';
+            winnerAnnounce.classList.add('hidden');
+            gameActive = true;
+
+            players.forEach(p => {
+                p.reset();
+                p.generateProblem();
+            });
+
+            // Start global timer (optional, displayed centrally if needed, but here we just use it logic-wise)
+            // For a 4-split screen, a central timer might be hidden, so we just let it run silently
+            // or we could add a timer bar at the top/bottom. Let's add a simple timer alert.
+
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                remainingTime--;
+                if (remainingTime <= 0) {
+                    endGame("시간 초과!");
+                }
+            }, 1000);
+        }
+
+        function checkWinCondition() {
+            for (let i = 0; i < players.length; i++) {
+                if (players[i].score >= targetScore) {
+                    endGame(`${players[i].name} 승리!`);
+                    return;
+                }
+            }
+        }
+
+        function endGame(message) {
+            gameActive = false;
+            clearInterval(timerInterval);
+
+            // Find highest score if time out
+            if (message === "시간 초과!") {
+                let maxScore = -1;
+                let winners = [];
+                players.forEach(p => {
+                    if (p.score > maxScore) {
+                        maxScore = p.score;
+                        winners = [p.name];
+                    } else if (p.score === maxScore) {
+                        winners.push(p.name);
+                    }
+                });
+                if (maxScore === 0) message += " 모두 0점입니다.";
+                else message += ` ${winners.join(', ')} 최고 점수(${maxScore}점)!`;
+            }
+
+            winnerAnnounce.textContent = message;
+            winnerAnnounce.classList.remove('hidden');
+            startBtn.textContent = "다시 시작";
+            overlay.style.display = 'flex';
+        }
+
+        startBtn.addEventListener('click', startGame);
+
+    </script>
+</body>
+
+</html>

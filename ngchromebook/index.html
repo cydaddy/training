@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=1500"> <!-- 고정 너비로 반응형 방해 -->
+    <title>신기한 공룡 탐험 - 초등과학</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', 'Nanum Gothic', sans-serif;
+            background-color: #f0fdf4;
+            /* FHD 기준의 고정 너비 설정 (크롬북에서 가로 스크롤 유발) */
+            min-width: 1500px;
+            overflow-x: auto;
+            color: #1e293b;
+        }
+
+        header {
+            background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+            color: white;
+            height: 250px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        header h1 {
+            font-size: 3.5rem;
+            margin: 0;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            margin-top: 10px;
+        }
+
+        .main-container {
+            width: 1400px;
+            /* 고정 너비: 크롬북(1366px)에서 화면을 벗어남 */
+            margin: 40px auto;
+            background: white;
+            padding: 40px;
+            border-radius: 30px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            position: relative;
+            min-height: 800px;
+        }
+
+        .content-grid {
+            display: flex;
+            /* flex-wrap이 없어 가로로 무한 확장됨 */
+            gap: 30px;
+            margin-top: 30px;
+        }
+
+        .card {
+            width: 400px;
+            flex-shrink: 0;
+            background: #ffffff;
+            border: 2px solid #e2e8f0;
+            border-radius: 20px;
+            padding: 0;
+            overflow: hidden;
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-10px);
+        }
+
+        .card .img-container {
+            width: 100%;
+            height: 250px;
+            background-color: #f1f5f9;
+            overflow: hidden;
+        }
+
+        .card img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .card-body {
+            padding: 20px;
+        }
+
+        .card h3 {
+            margin: 0 0 10px 0;
+            color: #15803d;
+            font-size: 1.5rem;
+        }
+
+        .quiz-box {
+            position: absolute;
+            top: 60px;
+            right: -120px;
+            /* FHD에선 여백에 보이지만 크롬북에선 화면 밖으로 이탈 */
+            width: 320px;
+            background: #fffbeb;
+            padding: 25px;
+            border: 3px dashed #f59e0b;
+            border-radius: 20px;
+            box-shadow: 0 10px 15px rgba(245, 158, 11, 0.1);
+        }
+
+        .quiz-box h4 {
+            margin-top: 0;
+            color: #b45309;
+        }
+
+        .quiz-box input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #fcd34d;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            box-sizing: border-box;
+        }
+
+        .quiz-box button {
+            width: 100%;
+            background: #f59e0b;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .floating-badge {
+            position: absolute;
+            left: 1350px;
+            /* 고정 위치: 해상도가 낮으면 본문을 가리거나 엉뚱한 데 위치 */
+            top: 550px;
+            background: #ef4444;
+            color: white;
+            padding: 15px;
+            border-radius: 50%;
+            width: 90px;
+            height: 90px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            font-weight: bold;
+            font-size: 0.9rem;
+            box-shadow: 0 10px 15px rgba(239, 68, 68, 0.3);
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+
+        footer {
+            margin-top: 60px;
+            padding: 40px;
+            text-align: center;
+            color: #64748b;
+            border-top: 1px solid #e2e8f0;
+            background: #f8fafc;
+        }
+
+        .warning-label {
+            background: #dc2626;
+            color: #fff;
+            padding: 8px 15px;
+            font-size: 14px;
+            font-weight: bold;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 1000;
+            border-bottom-right-radius: 10px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="warning-label">⚠️ 해상도 호환성 테스트 모드 (크롬북 환경에서 레이아웃 깨짐 확인용)</div>
+
+    <header>
+        <h1>🦖 신기한 공룡 세계 탐험</h1>
+        <p>백제기와 쥐라기를 주름잡았던 거대 공룡들을 만나보아요!</p>
+    </header>
+
+    <div class="main-container">
+        <h2>실감나는 공룡 도감</h2>
+        <p style="color: #64748b; margin-bottom: 30px;">각 공룡의 사진을 누르면 자세한 설명을 볼 수 있어요 (미구현).</p>
+
+        <div class="content-grid">
+            <div class="card">
+                <div class="img-container">
+                    <img src="https://www.khan.co.kr/article/201703232150015" alt="티라노사우루스"
+                        onerror="this.src='https://placehold.co/400x250/fee2e2/dc2626?text=Tyrannosaurus+Rex'">
+                </div>
+                <div class="card-body">
+                    <h3>티라노사우루스</h3>
+                    <p>지상 최강의 육식 공룡! '폭군 도마뱀'이라는 뜻을 가지고 있으며 엄청난 치악력을 자랑합니다.</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="img-container">
+                    <img src="https://blog.naver.com/dr_trex/221206563734?viewType=pc" alt="트리케라톱스"
+                        onerror="this.src='https://placehold.co/400x250/fef3c7/d97706?text=Triceratops'">
+                </div>
+                <div class="card-body">
+                    <h3>트리케라톱스</h3>
+                    <p>세 개의 뿔이 달린 초식 공룡이에요. 육식 공룡으로부터 자신을 보호하기 위해 단단한 프릴과 뿔을 가졌죠.</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="img-container">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/8/89/Brachiosaurus_BW.jpg" alt="브라키오사우루스"
+                        onerror="this.src='https://placehold.co/400x250/dcfce7/16a34a?text=Brachiosaurus'">
+                </div>
+                <div class="card-body">
+                    <h3>브라키오사우루스</h3>
+                    <p>목이 아주 길어 키가 큰 나무 위의 잎사귀도 냠냠 맛있게 먹을 수 있는 거대 초식 공룡입니다.</p>
+                </div>
+            </div>
+        </div>
+
+        <div style="margin-top: 60px; max-width: 900px;">
+            <h3 style="border-left: 5px solid #22c55e; padding-left: 15px;">공룡은 왜 사라졌을까요?</h3>
+            <p style="line-height: 1.8; font-size: 1.1rem;">
+                지금으로부터 약 6,600만 년 전, 거대한 운석이 지구에 떨어지면서 환경이 급격하게 변했어요.
+                먹을 것이 부족해지고 날씨가 추워지면서 공룡들은 서서히 자취를 감추게 되었답니다. 하지만 오늘날의 새들이 공룡의 후손이라는 사실, 알고 있었나요?
+            </p>
+        </div>
+
+        <div class="quiz-box">
+            <h4>💡 깜짝 퀴즈!</h4>
+            <p>'세 개의 뿔'이라는 뜻을 가진 공룡의 이름은?</p>
+            <input type="text" placeholder="정답을 입력하세요">
+            <button onclick="alert('정답 확인 기능은 준비 중입니다!')">확인</button>
+        </div>
+
+        <div class="floating-badge">
+            인기<br>학습!
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy; 2024 어린이 과학 교육 재단. 본 페이지는 해상도 대응 교육용 샘플입니다.</p>
+        <p style="font-size: 0.8rem; margin-top: 10px;">[주의] 이 페이지는 1920x1080 해상도에 최적화되어 있으며, 1366x768 이하 기기에서는 사용이 불편할
+            수 있습니다.</p>
+    </footer>
+
+</body>
+
+</html>
