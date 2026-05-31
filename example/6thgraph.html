@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>그래프 확인 프로그램</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Jua', sans-serif;
+            background-color: #fce7f3;
+            /* Light pink background */
+            background-image:
+                radial-gradient(#fecdd3 2px, transparent 2px),
+                radial-gradient(#fecdd3 2px, transparent 2px);
+            background-size: 40px 40px;
+            background-position: 0 0, 20px 20px;
+            color: #333;
+            overflow-x: hidden;
+        }
+
+        .memphis-box {
+            background-color: #fff;
+            border: 4px solid #111;
+            box-shadow: 8px 8px 0px #111;
+            border-radius: 16px;
+        }
+
+        .memphis-input {
+            border: 3px solid #111;
+            box-shadow: 4px 4px 0px #111;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .memphis-input:focus {
+            outline: none;
+            box-shadow: 6px 6px 0px #3b82f6;
+            transform: translate(-2px, -2px);
+        }
+
+        .memphis-btn {
+            background-color: #fbbf24;
+            /* Amber 400 */
+            border: 3px solid #111;
+            box-shadow: 4px 4px 0px #111;
+            border-radius: 8px;
+            color: #111;
+            font-weight: bold;
+            transition: all 0.1s ease;
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+        }
+
+        .memphis-btn:active {
+            box-shadow: 1px 1px 0px #111;
+            transform: translate(3px, 3px);
+        }
+
+        .memphis-btn.add-btn {
+            background-color: #34d399;
+        }
+
+        /* Emerald 400 */
+        .memphis-btn.draw-btn {
+            background-color: #60a5fa;
+            color: white;
+        }
+
+        /* Blue 400 */
+        .memphis-btn.delete-btn {
+            background-color: #f87171;
+            color: white;
+            border: 2px solid #111;
+            box-shadow: 2px 2px 0px #111;
+            padding: 2px 8px;
+        }
+
+        /* Ripple Effect */
+        .ripple {
+            position: absolute;
+            border-radius: 50%;
+            transform: scale(0);
+            animation: ripple-anim 600ms linear;
+            background-color: rgba(255, 255, 255, 0.7);
+        }
+
+        @keyframes ripple-anim {
+            to {
+                transform: scale(4);
+                opacity: 0;
+            }
+        }
+
+        /* Segment Control */
+        .segment-control {
+            display: flex;
+            border: 3px solid #111;
+            border-radius: 12px;
+            overflow: hidden;
+            background-color: #fff;
+            box-shadow: 4px 4px 0px #111;
+            margin: 0 auto;
+            width: fit-content;
+        }
+
+        .segment-btn {
+            padding: 8px 16px;
+            text-align: center;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.3s;
+            white-space: nowrap;
+            /* 줄바꿈 강제 방지 */
+            font-size: 0.9rem;
+        }
+
+        @media (min-width: 768px) {
+            .segment-btn {
+                padding: 10px 24px;
+                font-size: 1rem;
+            }
+        }
+
+        .segment-btn.active {
+            background-color: #a78bfa;
+            /* Violet 400 */
+            color: white;
+            border-radius: 0;
+            /* Override default */
+        }
+
+        .segment-btn:first-child.active {
+            border-right: 3px solid #111;
+        }
+
+        .segment-btn:last-child.active {
+            border-left: 3px solid #111;
+        }
+
+        /* Graph Canvas */
+        #graphCanvas {
+            width: 100%;
+            max-width: 400px;
+            /* 전체 크기 축소 */
+            height: 400px;
+            margin: 0 auto;
+            display: block;
+        }
+
+        /* Tooltip */
+        #tooltip {
+            position: absolute;
+            background-color: #fff;
+            border: 2px solid #111;
+            padding: 5px 10px;
+            border-radius: 8px;
+            pointer-events: none;
+            display: none;
+            font-weight: bold;
+            box-shadow: 3px 3px 0px #111;
+            z-index: 10;
+        }
+
+        /* Fun shapes for decoration */
+        .shape {
+            position: absolute;
+            z-index: -1;
+        }
+
+        .shape-circle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: #34d399;
+            border: 3px solid #111;
+        }
+
+        .shape-square {
+            width: 35px;
+            height: 35px;
+            background-color: #fbbf24;
+            border: 3px solid #111;
+            transform: rotate(15deg);
+        }
+
+        .shape-triangle {
+            width: 0;
+            height: 0;
+            border-left: 20px solid transparent;
+            border-right: 20px solid transparent;
+            border-bottom: 35px solid #60a5fa;
+            filter: drop-shadow(3px 3px 0px #111);
+        }
+    </style>
+</head>
+
+<body class="min-h-screen p-2 md:p-4 flex flex-col items-center">
+
+    <!-- Decorative Shapes -->
+    <div class="shape shape-circle" style="top: 5%; left: 5%;"></div>
+    <div class="shape shape-square" style="top: 15%; right: 5%;"></div>
+    <div class="shape shape-triangle" style="bottom: 10%; left: 10%; transform: rotate(-20deg);"></div>
+    <div class="shape shape-circle" style="bottom: 5%; right: 5%; background-color: #f472b6;"></div>
+
+    <header class="text-center mb-4">
+        <h1 class="text-3xl md:text-4xl font-bold text-white tracking-wider"
+            style="-webkit-text-stroke: 2px #111; text-shadow: 4px 4px 0 #a78bfa;">
+            띠 & 원그래프 찰칵! 📸
+        </h1>
+        <p
+            class="text-base mt-2 font-bold text-gray-800 bg-white inline-block px-4 py-1 rounded-full border-2 border-black shadow-[2px_2px_0px_#111]">
+            내가 그린 그래프가 맞는지 확인해봐!
+        </p>
+    </header>
+
+    <div class="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-8">
+
+        <!-- Left Column: Input Section -->
+        <div class="memphis-box p-4 md:p-6 flex flex-col gap-3 h-fit">
+            <h2 class="text-xl md:text-2xl font-bold border-b-4 border-black pb-2 inline-block w-fit">📊 자료 입력하기</h2>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr>
+                            <th class="p-2 border-b-2 border-black font-bold">항목 이름</th>
+                            <th class="p-2 border-b-2 border-black font-bold">값 (숫자)</th>
+                            <th class="p-2 border-b-2 border-black font-bold">삭제</th>
+                        </tr>
+                    </thead>
+                    <tbody id="dataTableBody">
+                        <!-- Rows will be added here dynamically -->
+                    </tbody>
+                </table>
+            </div>
+
+            <button id="addRowBtn" class="memphis-btn add-btn w-full py-2 mt-2 text-base md:text-lg">
+                ➕ 항목 추가하기
+            </button>
+
+            <div class="mt-2 p-3 bg-gray-50 border-2 border-dashed border-gray-400 rounded-lg">
+                <div class="flex justify-between items-center font-bold text-lg">
+                    <span>합계:</span>
+                    <span id="totalValueDisplay">0</span>
+                </div>
+            </div>
+
+            <button id="drawBtn" class="memphis-btn draw-btn w-full py-3 text-lg md:text-xl mt-2 animate-pulse">
+                🎨 그래프 그리기!
+            </button>
+            <p id="errorMessage" class="text-red-500 font-bold text-sm text-center hidden">항목 이름과 값을 모두 올바르게 입력해주세요!</p>
+        </div>
+
+        <!-- Right Column: Graph Section -->
+        <div class="memphis-box p-4 md:p-6 flex flex-col items-center justify-start relative">
+
+            <div class="w-full flex justify-between items-center mb-4">
+                <h2 class="text-xl md:text-2xl font-bold border-b-4 border-black pb-2">✨ 결과 확인</h2>
+
+                <!-- Segment Control -->
+                <div class="segment-control text-sm md:text-base">
+                    <div id="btnBar" class="segment-btn active" onclick="switchGraphType('bar')">띠그래프</div>
+                    <div id="btnPie" class="segment-btn" onclick="switchGraphType('pie')">원그래프</div>
+                </div>
+            </div>
+
+            <!-- Result Table (Percentages) -->
+            <div id="resultTableContainer" class="w-full mb-4 hidden">
+                <h3 class="font-bold text-base mb-2">백분율 계산 결과:</h3>
+                <div class="flex flex-wrap gap-2" id="percentageTags">
+                    <!-- Tags will appear here -->
+                </div>
+            </div>
+
+            <!-- Canvas Container -->
+            <div class="relative w-full flex justify-center items-center flex-grow min-h-[300px]">
+                <canvas id="graphCanvas" width="400" height="400"></canvas>
+                <div id="emptyState"
+                    class="absolute inset-0 flex flex-col items-center justify-center text-gray-400 font-bold text-lg text-center pointer-events-none">
+                    <span class="text-3xl mb-2">🤔</span>
+                    자료를 입력하고<br>그리기 버튼을 눌러주세요!
+                </div>
+                <div id="tooltip"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Sound Effects Setup (Tone.js) ---
+        const synth = new Tone.Synth().toDestination();
+
+        function playClickSound() {
+            if (Tone.context.state !== 'running') Tone.context.resume();
+            synth.triggerAttackRelease("C5", "32n");
+        }
+
+        function playSuccessSound() {
+            if (Tone.context.state !== 'running') Tone.context.resume();
+            const now = Tone.now();
+            synth.triggerAttackRelease("C4", "8n", now);
+            synth.triggerAttackRelease("E4", "8n", now + 0.1);
+            synth.triggerAttackRelease("G4", "8n", now + 0.2);
+            synth.triggerAttackRelease("C5", "4n", now + 0.3);
+        }
+
+        function playDeleteSound() {
+            if (Tone.context.state !== 'running') Tone.context.resume();
+            synth.triggerAttackRelease("G3", "16n");
+        }
+
+
+        // --- Ripple Effect Logic ---
+        function createRipple(event) {
+            const button = event.currentTarget;
+            const circle = document.createElement("span");
+            const diameter = Math.max(button.clientWidth, button.clientHeight);
+            const radius = diameter / 2;
+
+            const rect = button.getBoundingClientRect();
+
+            circle.style.width = circle.style.height = `${diameter}px`;
+            circle.style.left = `${event.clientX - rect.left - radius}px`;
+            circle.style.top = `${event.clientY - rect.top - radius}px`;
+            circle.classList.add("ripple");
+
+            const ripple = button.getElementsByClassName("ripple")[0];
+            if (ripple) {
+                ripple.remove();
+            }
+
+            button.appendChild(circle);
+        }
+
+        // Attach ripple to all buttons initially
+        document.querySelectorAll('.memphis-btn').forEach(btn => {
+            btn.addEventListener('mousedown', createRipple);
+            btn.addEventListener('mousedown', playClickSound); // Attach sound here too
+        });
+
+
+        // --- State Management ---
+        let dataEntries = [
+            { id: Date.now(), name: '', value: '' },
+            { id: Date.now() + 1, name: '', value: '' }
+        ];
+        let currentGraphType = 'bar'; // 'bar' or 'pie'
+        let graphData = []; // Processed data with percentages
+
+        // Memphis colors for charts
+        const chartColors = [
+            '#f472b6', // Pink
+            '#60a5fa', // Blue
+            '#fbbf24', // Yellow
+            '#34d399', // Green
+            '#a855f7', // Purple
+            '#fb923c', // Orange
+            '#2dd4bf', // Teal
+            '#f87171'  // Red
+        ];
+
+
+        // --- DOM Elements ---
+        const dataTableBody = document.getElementById('dataTableBody');
+        const addRowBtn = document.getElementById('addRowBtn');
+        const totalValueDisplay = document.getElementById('totalValueDisplay');
+        const drawBtn = document.getElementById('drawBtn');
+        const errorMessage = document.getElementById('errorMessage');
+        const canvas = document.getElementById('graphCanvas');
+        const ctx = canvas.getContext('2d');
+        const emptyState = document.getElementById('emptyState');
+        const resultTableContainer = document.getElementById('resultTableContainer');
+        const percentageTags = document.getElementById('percentageTags');
+        const tooltip = document.getElementById('tooltip');
+
+
+        // --- Functions ---
+
+        // Render input rows
+        function renderTable() {
+            dataTableBody.innerHTML = '';
+            dataEntries.forEach((entry, index) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="p-2">
+                        <input type="text" placeholder="예: 축구" class="memphis-input w-full p-2" 
+                               value="${entry.name}" onchange="updateEntry(${entry.id}, 'name', this.value)">
+                    </td>
+                    <td class="p-2">
+                        <input type="number" placeholder="예: 15" min="0" class="memphis-input w-full p-2 text-right" 
+                               value="${entry.value}" onchange="updateEntry(${entry.id}, 'value', this.value)" oninput="calculateTotal()">
+                    </td>
+                    <td class="p-2 text-center">
+                        <button class="memphis-btn delete-btn" onclick="deleteEntry(${entry.id})">X</button>
+                    </td>
+                `;
+                dataTableBody.appendChild(tr);
+            });
+
+            // Re-attach ripple and sound to new delete buttons
+            document.querySelectorAll('.delete-btn').forEach(btn => {
+                btn.addEventListener('mousedown', createRipple);
+                btn.addEventListener('mousedown', playDeleteSound);
+            });
+            calculateTotal();
+        }
+
+        // Add new row
+        addRowBtn.addEventListener('click', () => {
+            dataEntries.push({ id: Date.now(), name: '', value: '' });
+            renderTable();
+        });
+
+        // Update entry data
+        window.updateEntry = function (id, field, value) {
+            const entry = dataEntries.find(e => e.id === id);
+            if (entry) {
+                entry[field] = value;
+            }
+            calculateTotal();
+        };
+
+        // Delete row
+        window.deleteEntry = function (id) {
+            if (dataEntries.length <= 1) {
+                alert("최소 1개의 항목은 필요합니다.");
+                return;
+            }
+            dataEntries = dataEntries.filter(e => e.id !== id);
+            renderTable();
+        };
+
+        // Calculate total value
+        function calculateTotal() {
+            const total = dataEntries.reduce((sum, entry) => {
+                const val = parseFloat(entry.value);
+                return sum + (isNaN(val) ? 0 : val);
+            }, 0);
+            totalValueDisplay.textContent = total;
+            return total;
+        }
+
+        // Process data for graphing
+        function processData() {
+            errorMessage.classList.add('hidden');
+            const total = calculateTotal();
+
+            if (total <= 0) {
+                errorMessage.textContent = "총합이 0보다 커야 합니다. 숫자를 올바르게 입력해주세요.";
+                errorMessage.classList.remove('hidden');
+                return false;
+            }
+
+            graphData = [];
+            let isValid = true;
+            let currentPercentageSum = 0;
+
+            // First pass: calculate exact percentages
+            dataEntries.forEach((entry, index) => {
+                const val = parseFloat(entry.value);
+                if (!entry.name.trim() || isNaN(val)) {
+                    isValid = false;
+                } else {
+                    const exactPercentage = (val / total) * 100;
+                    const roundedPercentage = Math.round(exactPercentage * 10) / 10; // Round to 1 decimal place
+
+                    graphData.push({
+                        name: entry.name,
+                        value: val,
+                        exactPercentage: exactPercentage,
+                        percentage: roundedPercentage,
+                        color: chartColors[index % chartColors.length]
+                    });
+                }
+            });
+
+            if (!isValid || graphData.length === 0) {
+                errorMessage.textContent = "빈칸이 있거나 숫자가 아닌 값이 있습니다.";
+                errorMessage.classList.remove('hidden');
+                return false;
+            }
+
+            // Adjust rounding errors so sum is exactly 100%
+            let sumPercent = graphData.reduce((sum, item) => sum + item.percentage, 0);
+            if (sumPercent !== 100) {
+                // Find item with largest difference between rounded and exact
+                let diffs = graphData.map((item, idx) => ({
+                    idx: idx,
+                    diff: item.exactPercentage - item.percentage
+                }));
+
+                if (sumPercent < 100) {
+                    diffs.sort((a, b) => b.diff - a.diff); // Sort descending
+                    graphData[diffs[0].idx].percentage = Math.round((graphData[diffs[0].idx].percentage + (100 - sumPercent)) * 10) / 10;
+                } else {
+                    diffs.sort((a, b) => a.diff - b.diff); // Sort ascending
+                    graphData[diffs[0].idx].percentage = Math.round((graphData[diffs[0].idx].percentage - (sumPercent - 100)) * 10) / 10;
+                }
+            }
+
+            displayPercentages();
+            return true;
+        }
+
+        // Display percentage tags
+        function displayPercentages() {
+            resultTableContainer.classList.remove('hidden');
+            percentageTags.innerHTML = '';
+
+            graphData.forEach(data => {
+                const tag = document.createElement('div');
+                tag.className = 'px-3 py-1 rounded-full border-2 border-black font-bold flex items-center gap-2 shadow-[2px_2px_0px_#111]';
+                tag.style.backgroundColor = 'white';
+
+                const colorDot = document.createElement('span');
+                colorDot.className = 'w-3 h-3 rounded-full border border-black inline-block';
+                colorDot.style.backgroundColor = data.color;
+
+                const text = document.createElement('span');
+                text.textContent = `${data.name}: ${data.percentage}%`;
+
+                tag.appendChild(colorDot);
+                tag.appendChild(text);
+                percentageTags.appendChild(tag);
+            });
+        }
+
+        // Switch Graph Type
+        window.switchGraphType = function (type) {
+            playClickSound();
+            currentGraphType = type;
+            document.getElementById('btnBar').classList.toggle('active', type === 'bar');
+            document.getElementById('btnPie').classList.toggle('active', type === 'pie');
+
+            if (graphData.length > 0) {
+                drawGraph();
+            }
+        };
+
+        // --- Drawing Logic ---
+        function drawBarGraph() {
+            const width = canvas.width;
+            const height = canvas.height;
+            const barHeight = 100;
+            const startY = height / 2 - barHeight / 2;
+            const padding = 40; // Left/Right padding
+            const drawableWidth = width - (padding * 2);
+
+            let currentX = padding;
+
+            // Draw Memphis style background shadow for the bar
+            ctx.fillStyle = '#111';
+            ctx.fillRect(padding + 8, startY + 8, drawableWidth, barHeight);
+
+            // Draw sections
+            graphData.forEach(data => {
+                const sectionWidth = (data.percentage / 100) * drawableWidth;
+
+                // Store path for tooltip detection
+                data.path = new Path2D();
+                data.path.rect(currentX, startY, sectionWidth, barHeight);
+
+                // Draw colored rectangle
+                ctx.fillStyle = data.color;
+                ctx.fill(data.path);
+                ctx.strokeStyle = '#111';
+                ctx.lineWidth = 3;
+                ctx.stroke(data.path);
+
+                // Draw Text inside
+                ctx.fillStyle = '#111';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.font = 'bold 16px Jua';
+
+                // Only draw text if section is wide enough
+                if (sectionWidth > 40) {
+                    // Try to fit name and percentage
+                    let textY = startY + barHeight / 2;
+                    if (sectionWidth > 60) {
+                        ctx.fillText(data.name, currentX + sectionWidth / 2, textY - 10);
+                        ctx.fillText(`${data.percentage}%`, currentX + sectionWidth / 2, textY + 15);
+                    } else {
+                        ctx.fillText(`${data.percentage}%`, currentX + sectionWidth / 2, textY);
+                    }
+                }
+
+                currentX += sectionWidth;
+            });
+
+            // Draw scale
+            ctx.fillStyle = '#111';
+            ctx.font = '14px Jua';
+            ctx.textAlign = 'center';
+            for (let i = 0; i <= 10; i++) {
+                const tickX = padding + (drawableWidth * (i / 10));
+                ctx.beginPath();
+                ctx.moveTo(tickX, startY + barHeight);
+                ctx.lineTo(tickX, startY + barHeight + 10);
+                ctx.stroke();
+                ctx.fillText((i * 10).toString(), tickX, startY + barHeight + 25);
+            }
+        }
+
+        function drawPieGraph() {
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const radius = Math.min(centerX, centerY) - 50;
+
+            // Memphis shadow
+            ctx.beginPath();
+            ctx.arc(centerX + 8, centerY + 8, radius, 0, 2 * Math.PI);
+            ctx.fillStyle = '#111';
+            ctx.fill();
+
+            let currentAngle = -Math.PI / 2; // Start at top
+
+            graphData.forEach(data => {
+                const sliceAngle = (data.percentage / 100) * 2 * Math.PI;
+
+                data.path = new Path2D();
+                data.path.moveTo(centerX, centerY);
+                data.path.arc(centerX, centerY, radius, currentAngle, currentAngle + sliceAngle);
+                data.path.closePath();
+
+                // Draw slice
+                ctx.fillStyle = data.color;
+                ctx.fill(data.path);
+                ctx.strokeStyle = '#111';
+                ctx.lineWidth = 3;
+                ctx.stroke(data.path);
+
+                // Calculate label position
+                const labelAngle = currentAngle + sliceAngle / 2;
+                const labelRadius = radius * 0.65; // Place labels slightly past middle
+                const labelX = centerX + Math.cos(labelAngle) * labelRadius;
+                const labelY = centerY + Math.sin(labelAngle) * labelRadius;
+
+                // Draw Text
+                ctx.fillStyle = '#111';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.font = 'bold 16px Jua';
+
+                // Add a white background to text for better readability
+                const text = `${data.name} ${data.percentage}%`;
+                const textWidth = ctx.measureText(text).width;
+
+                if (data.percentage > 3) { // Only draw if slice is big enough
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+                    ctx.beginPath();
+                    ctx.roundRect(labelX - textWidth / 2 - 5, labelY - 12, textWidth + 10, 24, 5);
+                    ctx.fill();
+
+                    ctx.fillStyle = '#111';
+                    ctx.fillText(data.name, labelX, labelY - 8);
+                    ctx.fillText(`${data.percentage}%`, labelX, labelY + 8);
+                }
+
+                currentAngle += sliceAngle;
+            });
+        }
+
+        function drawGraph() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            emptyState.style.display = 'none';
+
+            if (currentGraphType === 'bar') {
+                drawBarGraph();
+            } else {
+                drawPieGraph();
+            }
+        }
+
+        // Draw Button Event
+        drawBtn.addEventListener('click', () => {
+            if (processData()) {
+                playSuccessSound();
+                // Add a little pop animation to the canvas container
+                canvas.parentElement.style.transform = 'scale(1.05)';
+                setTimeout(() => {
+                    canvas.parentElement.style.transform = 'scale(1)';
+                }, 200);
+                canvas.parentElement.style.transition = 'transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+
+                drawGraph();
+            }
+        });
+
+        // Mouse Move for Tooltip
+        canvas.addEventListener('mousemove', (event) => {
+            if (graphData.length === 0) return;
+
+            const rect = canvas.getBoundingClientRect();
+            // Adjust coordinates taking CSS scaling into account
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            const x = (event.clientX - rect.left) * scaleX;
+            const y = (event.clientY - rect.top) * scaleY;
+
+            let hoveredData = null;
+
+            // Check which path the mouse is in
+            for (const data of graphData) {
+                if (data.path && ctx.isPointInPath(data.path, x, y)) {
+                    hoveredData = data;
+                    break;
+                }
+            }
+
+            if (hoveredData) {
+                tooltip.style.display = 'block';
+                tooltip.textContent = `${hoveredData.name}: ${hoveredData.value} (${hoveredData.percentage}%)`;
+
+                // Position tooltip near mouse (using client coords, not canvas coords)
+                tooltip.style.left = `${event.clientX + 15}px`;
+                tooltip.style.top = `${event.clientY + 15}px`;
+                canvas.style.cursor = 'pointer';
+            } else {
+                tooltip.style.display = 'none';
+                canvas.style.cursor = 'default';
+            }
+        });
+
+        canvas.addEventListener('mouseleave', () => {
+            tooltip.style.display = 'none';
+        });
+
+        // Initial render
+        renderTable();
+        // Tone.js requires user interaction to start, setup happens on first button click
+
+    </script>
+</body>
+
+</html>
