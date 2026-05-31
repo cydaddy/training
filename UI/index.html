@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Selection UI Alternatives</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+
+        .selection-card {
+            transition: all 0.3s ease;
+        }
+
+        .selection-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .active-segment {
+            background-color: white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #3b82f6;
+            cursor: pointer;
+            border-radius: 50%;
+        }
+
+        .toggle-dot {
+            transition: transform 0.3s ease-in-out;
+        }
+
+        input:checked~.toggle-bg {
+            background-color: #3b82f6;
+        }
+
+        input:checked~.toggle-dot {
+            transform: translateX(100%);
+        }
+
+        /* select 화살표 커스텀을 위한 기본 스타일 제거 */
+        select {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+        }
+    </style>
+</head>
+
+<body class="p-4 md:p-8">
+
+    <div class="max-w-4xl mx-auto">
+        <!-- Header -->
+        <header class="mb-12 text-center">
+            <h1 class="text-4xl font-bold text-gray-900 mb-4">다양한 선택 UI 옵션들</h1>
+            <p class="text-gray-600">체크박스와 드롭다운 외에 사용성을 높여주는 직관적인 선택 방식들을 소개합니다.</p>
+        </header>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+
+            <!-- 1. Segmented Control -->
+            <section class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 selection-card">
+                <div class="flex items-center gap-2 mb-4">
+                    <span class="p-2 bg-blue-100 text-blue-600 rounded-lg"><i class="fas fa-layer-group"></i></span>
+                    <h2 class="text-xl font-semibold">세그먼트 컨트롤</h2>
+                </div>
+                <p class="text-sm text-gray-500 mb-6">적은 수의 옵션(2~4개)을 전환할 때 최적입니다.</p>
+                <div class="bg-gray-100 p-1 rounded-xl flex">
+                    <button onclick="setSegment(this)"
+                        class="flex-1 py-2 text-sm font-medium rounded-lg active-segment transition-all">주간</button>
+                    <button onclick="setSegment(this)"
+                        class="flex-1 py-2 text-sm font-medium rounded-lg text-gray-500 hover:text-gray-700 transition-all">월간</button>
+                    <button onclick="setSegment(this)"
+                        class="flex-1 py-2 text-sm font-medium rounded-lg text-gray-500 hover:text-gray-700 transition-all">연간</button>
+                </div>
+            </section>
+
+            <!-- 2. Toggle Switch -->
+            <section class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 selection-card">
+                <div class="flex items-center gap-2 mb-4">
+                    <span class="p-2 bg-green-100 text-green-600 rounded-lg"><i class="fas fa-toggle-on"></i></span>
+                    <h2 class="text-xl font-semibold">토글 스위치</h2>
+                </div>
+                <p class="text-sm text-gray-500 mb-6">켜기/끄기 또는 상태 활성화에 사용합니다.</p>
+                <div class="flex flex-col gap-4">
+                    <div class="flex items-center justify-between">
+                        <span class="text-gray-700">다크 모드</span>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" class="sr-only peer">
+                            <div
+                                class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full toggle-bg transition-colors">
+                            </div>
+                            <div class="absolute left-1 top-1 bg-white w-4 h-4 rounded-full toggle-dot shadow-sm"></div>
+                        </label>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-gray-700">푸시 알림</span>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" checked class="sr-only peer">
+                            <div
+                                class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full toggle-bg transition-colors">
+                            </div>
+                            <div class="absolute left-1 top-1 bg-white w-4 h-4 rounded-full toggle-dot shadow-sm"></div>
+                        </label>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 3. Chips / Pills -->
+            <section class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 selection-card">
+                <div class="flex items-center gap-2 mb-4">
+                    <span class="p-2 bg-purple-100 text-purple-600 rounded-lg"><i class="fas fa-tags"></i></span>
+                    <h2 class="text-xl font-semibold">칩 (Chips/Pills)</h2>
+                </div>
+                <p class="text-sm text-gray-500 mb-6">태그형태로 여러 키워드를 다중 선택할 때 유용합니다.</p>
+                <div class="flex flex-wrap gap-2" id="chips-container">
+                    <button onclick="toggleChip(this)"
+                        class="px-4 py-1.5 rounded-full border border-gray-200 text-sm bg-blue-500 text-white border-blue-500">#
+                        디자인</button>
+                    <button onclick="toggleChip(this)"
+                        class="px-4 py-1.5 rounded-full border border-gray-200 text-sm hover:bg-gray-50 transition-colors">#
+                        개발</button>
+                    <button onclick="toggleChip(this)"
+                        class="px-4 py-1.5 rounded-full border border-gray-200 text-sm hover:bg-gray-50 transition-colors">#
+                        마케팅</button>
+                    <button onclick="toggleChip(this)"
+                        class="px-4 py-1.5 rounded-full border border-gray-200 text-sm hover:bg-gray-50 transition-colors">#
+                        기획</button>
+                </div>
+            </section>
+
+            <!-- 4. Stepper -->
+            <section class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 selection-card">
+                <div class="flex items-center gap-2 mb-4">
+                    <span class="p-2 bg-orange-100 text-orange-600 rounded-lg"><i class="fas fa-plus-minus"></i></span>
+                    <h2 class="text-xl font-semibold">스테퍼</h2>
+                </div>
+                <p class="text-sm text-gray-500 mb-6">수량을 정확하게 조절해야 할 때 사용합니다.</p>
+                <div class="flex items-center justify-center gap-6 py-2">
+                    <button onclick="updateStepper(-1)"
+                        class="w-10 h-10 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-50 active:scale-95 transition-all"><i
+                            class="fas fa-minus"></i></button>
+                    <span id="stepper-value" class="text-2xl font-bold w-12 text-center">1</span>
+                    <button onclick="updateStepper(1)"
+                        class="w-10 h-10 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-50 active:scale-95 transition-all"><i
+                            class="fas fa-plus"></i></button>
+                </div>
+            </section>
+
+            <!-- 5. Slider -->
+            <section class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 selection-card md:col-span-2">
+                <div class="flex items-center gap-2 mb-4">
+                    <span class="p-2 bg-pink-100 text-pink-600 rounded-lg"><i class="fas fa-sliders-h"></i></span>
+                    <h2 class="text-xl font-semibold">슬라이더</h2>
+                </div>
+                <div class="flex flex-col md:flex-row gap-8 items-center">
+                    <div class="w-full">
+                        <p class="text-sm text-gray-500 mb-6">범위나 정도를 직관적으로 조절할 수 있습니다.</p>
+                        <input type="range" min="0" max="100" value="50" oninput="updateSlider(this.value)"
+                            class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                        <div class="flex justify-between mt-2 text-xs text-gray-400">
+                            <span>0%</span>
+                            <span>50%</span>
+                            <span>100%</span>
+                        </div>
+                    </div>
+                    <div
+                        class="flex items-center justify-center bg-blue-50 text-blue-600 rounded-2xl p-6 min-w-[120px]">
+                        <span class="text-4xl font-bold" id="slider-display">50</span><span class="text-xl">%</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 6. Checkbox -->
+            <section class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 selection-card">
+                <div class="flex items-center gap-2 mb-4">
+                    <span class="p-2 bg-teal-100 text-teal-600 rounded-lg"><i class="fas fa-check-square"></i></span>
+                    <h2 class="text-xl font-semibold">체크박스</h2>
+                </div>
+                <p class="text-sm text-gray-500 mb-6">독립적으로 다중 선택이 가능할 때 사용합니다.</p>
+                <div class="flex flex-col gap-3">
+                    <label
+                        class="flex items-center gap-3 p-3 rounded-lg border border-gray-200 cursor-pointer hover:bg-gray-50 transition-colors">
+                        <input type="checkbox"
+                            class="w-5 h-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+                        <span class="text-gray-700">이메일 알림 받기</span>
+                    </label>
+                    <label
+                        class="flex items-center gap-3 p-3 rounded-lg border border-gray-200 cursor-pointer hover:bg-gray-50 transition-colors">
+                        <input type="checkbox" checked
+                            class="w-5 h-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+                        <span class="text-gray-700">SMS 알림 받기</span>
+                    </label>
+                    <label
+                        class="flex items-center gap-3 p-3 rounded-lg border border-gray-200 cursor-pointer hover:bg-gray-50 transition-colors">
+                        <input type="checkbox"
+                            class="w-5 h-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+                        <span class="text-gray-700">마케팅 정보 수신 (선택)</span>
+                    </label>
+                </div>
+            </section>
+
+            <!-- 7. Dropdown -->
+            <section class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 selection-card">
+                <div class="flex items-center gap-2 mb-4">
+                    <span class="p-2 bg-indigo-100 text-indigo-600 rounded-lg"><i class="fas fa-list-ul"></i></span>
+                    <h2 class="text-xl font-semibold">드롭다운</h2>
+                </div>
+                <p class="text-sm text-gray-500 mb-6">많은 옵션 중 하나를 선택할 때 공간을 절약합니다.</p>
+                <div class="relative mt-2">
+                    <select
+                        class="w-full bg-white border border-gray-300 text-gray-700 py-3 px-4 pr-10 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all cursor-pointer font-medium hover:bg-gray-50">
+                        <option value="" disabled selected>관심 분야를 선택하세요</option>
+                        <option value="uiux">UI/UX 디자인</option>
+                        <option value="frontend">프론트엔드 개발</option>
+                        <option value="backend">백엔드 개발</option>
+                        <option value="data">데이터 분석</option>
+                        <option value="pm">프로덕트 매니징</option>
+                    </select>
+                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-500">
+                        <i class="fas fa-chevron-down text-sm"></i>
+                    </div>
+                </div>
+                <!-- 예시 설명 텍스트 (옵션) -->
+                <div class="mt-4 p-3 bg-gray-50 rounded-lg border border-gray-100">
+                    <p class="text-xs text-gray-500 leading-relaxed"><i class="fas fa-info-circle mr-1"></i> 옵션이 5개 이상일
+                        경우 라디오 버튼 대신 드롭다운을 사용하는 것이 시각적으로 깔끔합니다.</p>
+                </div>
+            </section>
+
+            <!-- 8. Visual/Image Picker -->
+            <section class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 selection-card md:col-span-2">
+                <div class="flex items-center gap-2 mb-4">
+                    <span class="p-2 bg-yellow-100 text-yellow-600 rounded-lg"><i class="fas fa-th-large"></i></span>
+                    <h2 class="text-xl font-semibold">비주얼 피커 (카드형 선택)</h2>
+                </div>
+                <p class="text-sm text-gray-500 mb-6">이미지나 아이콘을 활용해 선택의 직관성을 높입니다.</p>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div onclick="selectCard(this)"
+                        class="cursor-pointer border-2 border-blue-500 bg-blue-50 p-4 rounded-xl text-center flex flex-col items-center gap-3 transition-all">
+                        <i class="fas fa-bolt text-2xl text-blue-500"></i>
+                        <span class="font-medium text-blue-700">빠른 모드</span>
+                    </div>
+                    <div onclick="selectCard(this)"
+                        class="cursor-pointer border-2 border-transparent bg-gray-50 p-4 rounded-xl text-center flex flex-col items-center gap-3 hover:bg-gray-100 transition-all">
+                        <i class="fas fa-shield-halved text-2xl text-gray-400"></i>
+                        <span class="font-medium text-gray-600">안전 모드</span>
+                    </div>
+                    <div onclick="selectCard(this)"
+                        class="cursor-pointer border-2 border-transparent bg-gray-50 p-4 rounded-xl text-center flex flex-col items-center gap-3 hover:bg-gray-100 transition-all">
+                        <i class="fas fa-leaf text-2xl text-gray-400"></i>
+                        <span class="font-medium text-gray-600">절전 모드</span>
+                    </div>
+                    <div onclick="selectCard(this)"
+                        class="cursor-pointer border-2 border-transparent bg-gray-50 p-4 rounded-xl text-center flex flex-col items-center gap-3 hover:bg-gray-100 transition-all">
+                        <i class="fas fa-gear text-2xl text-gray-400"></i>
+                        <span class="font-medium text-gray-600">사용자 지정</span>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+
+        <footer class="mt-16 text-center text-gray-400 text-sm pb-10">
+            UI/UX Selection Components Showcase &copy; 2024
+        </footer>
+    </div>
+
+    <script>
+        // Segmented Control Logic
+        function setSegment(btn) {
+            const parent = btn.parentElement;
+            const buttons = parent.querySelectorAll('button');
+            buttons.forEach(b => {
+                b.classList.remove('active-segment', 'text-gray-900');
+                b.classList.add('text-gray-500');
+            });
+            btn.classList.add('active-segment');
+            btn.classList.remove('text-gray-500');
+            btn.classList.add('text-gray-900');
+        }
+
+        // Chips Logic
+        function toggleChip(btn) {
+            if (btn.classList.contains('bg-blue-500')) {
+                btn.classList.remove('bg-blue-500', 'text-white', 'border-blue-500');
+                btn.classList.add('border-gray-200', 'hover:bg-gray-50');
+            } else {
+                btn.classList.add('bg-blue-500', 'text-white', 'border-blue-500');
+                btn.classList.remove('border-gray-200', 'hover:bg-gray-50');
+            }
+        }
+
+        // Stepper Logic
+        function updateStepper(val) {
+            const display = document.getElementById('stepper-value');
+            let current = parseInt(display.innerText);
+            current = Math.max(1, current + val);
+            display.innerText = current;
+        }
+
+        // Slider Logic
+        function updateSlider(val) {
+            document.getElementById('slider-display').innerText = val;
+        }
+
+        // Visual Card Picker Logic
+        function selectCard(card) {
+            const siblings = card.parentElement.children;
+            for (let sib of siblings) {
+                sib.classList.remove('border-blue-500', 'bg-blue-50');
+                sib.classList.add('border-transparent', 'bg-gray-50');
+                const icon = sib.querySelector('i');
+                const text = sib.querySelector('span');
+                icon.classList.remove('text-blue-500');
+                icon.classList.add('text-gray-400');
+                text.classList.remove('text-blue-700');
+                text.classList.add('text-gray-600');
+            }
+            card.classList.add('border-blue-500', 'bg-blue-50');
+            card.classList.remove('border-transparent', 'bg-gray-50');
+            const activeIcon = card.querySelector('i');
+            const activeText = card.querySelector('span');
+            activeIcon.classList.remove('text-gray-400');
+            activeIcon.classList.add('text-blue-500');
+            activeText.classList.remove('text-gray-600');
+            activeText.classList.add('text-blue-700');
+        }
+    </script>
+</body>
+
+</html>

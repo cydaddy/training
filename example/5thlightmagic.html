@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>빛의 마법사 - 초등 5학년 과학 빛의 반사 퍼즐</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React & React DOM UMD -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <!-- Babel for In-Browser JSX Compilation -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Nanum+Gothic:wght@400;700;800&display=swap');
+        body {
+            font-family: 'Inter', 'Nanum Gothic', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useCallback } = React;
+
+        // --- 게임 상수 및 유틸리티 ---
+        const CANVAS_WIDTH = 800;
+        const CANVAS_HEIGHT = 600;
+        const MIRROR_LENGTH = 80;
+        const TARGET_RADIUS = 20;
+
+        // 오디오 컨텍스트 (효과음)
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx = null;
+
+        const playSound = (type) => {
+            if (!audioCtx) return;
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            const now = audioCtx.currentTime;
+
+            if (type === 'success') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(440, now); // A4
+                osc.frequency.exponentialRampToValueAtTime(880, now + 0.3);
+                gain.gain.setValueAtTime(0, now);
+                gain.gain.linearRampToValueAtTime(0.3, now + 0.1);
+                gain.gain.linearRampToValueAtTime(0, now + 0.5);
+                osc.start(now);
+                osc.stop(now + 0.5);
+            } else if (type === 'place') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(600, now);
+                osc.frequency.exponentialRampToValueAtTime(300, now + 0.1);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                osc.start(now);
+                osc.stop(now + 0.1);
+            } else if (type === 'rotate') {
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(800, now);
+                gain.gain.setValueAtTime(0.05, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+                osc.start(now);
+                osc.stop(now + 0.05);
+            }
+        };
+
+        // 벡터/수학 유틸리티
+        const dist2 = (v, w) => Math.pow(v.x - w.x, 2) + Math.pow(v.y - w.y, 2);
+        const distToSegmentSquared = (p, v, w) => {
+            const l2 = dist2(v, w);
+            if (l2 === 0) return dist2(p, v);
+            let t = ((p.x - v.x) * (w.x - v.x) + (p.y - v.y) * (w.y - v.y)) / l2;
+            t = Math.max(0, Math.min(1, t));
+            return dist2(p, { x: v.x + t * (w.x - v.x), y: v.y + t * (w.y - v.y) });
+        };
+        const distToSegment = (p, v, w) => Math.sqrt(distToSegmentSquared(p, v, w));
+
+        // 선분 교차 확인 로직 (광선 추적용)
+        const getIntersection = (ray, segment) => {
+            const p = ray.origin;
+            const r = ray.dir;
+            const q = segment.p1;
+            const s = { x: segment.p2.x - segment.p1.x, y: segment.p2.y - segment.p1.y };
+
+            const rCrossS = r.x * s.y - r.y * s.x;
+            if (Math.abs(rCrossS) < 1e-8) return null; // 평행
+
+            const qMinusP = { x: q.x - p.x, y: q.y - p.y };
+            const t = (qMinusP.x * s.y - qMinusP.y * s.x) / rCrossS;
+            const u = (qMinusP.x * r.y - qMinusP.y * r.x) / rCrossS;
+
+            if (t > 0.001 && u >= 0 && u <= 1) { // t > 0.001은 자기 자신과의 즉각적인 재교차 방지
+                return { point: { x: p.x + t * r.x, y: p.y + t * r.y }, distance: t, segment };
+            }
+            return null;
+        };
+
+        // 레벨 데이터
+        const LEVELS = [
+            {
+                title: "1단계: 빛의 반사 맛보기",
+                desc: "오른쪽 거울을 보드 위로 드래그하고, 동그란 테두리를 돌려 빛을 목표(빨간 원)에 맞추세요!",
+                source: { x: 100, y: 300, angle: 0 },
+                target: { x: 700, y: 150 },
+                walls: [
+                    { p1: { x: 400, y: 0 }, p2: { x: 400, y: 400 } }
+                ],
+                inventory: 1
+            },
+            {
+                title: "2단계: 두 번 꺾기",
+                desc: "거울 2개를 사용하여 복잡한 장애물을 피해보세요. 광원(레이저)의 각도도 조절할 수 있습니다!",
+                source: { x: 100, y: 500, angle: -Math.PI / 4 },
+                target: { x: 700, y: 500 },
+                walls: [
+                    { p1: { x: 400, y: 600 }, p2: { x: 400, y: 250 } },
+                    { p1: { x: 250, y: 250 }, p2: { x: 550, y: 250 } }
+                ],
+                inventory: 2
+            },
+            {
+                title: "3단계: 지그재그 미로",
+                desc: "빛은 항상 직진합니다. 거울 3개를 요리조리 배치해서 좁은 길을 통과하세요.",
+                source: { x: 100, y: 100, angle: 0 },
+                target: { x: 700, y: 500 },
+                walls: [
+                    { p1: { x: 300, y: 0 }, p2: { x: 300, y: 450 } },
+                    { p1: { x: 500, y: 150 }, p2: { x: 500, y: 600 } }
+                ],
+                inventory: 3
+            }
+        ];
+
+        function App() {
+            const canvasRef = useRef(null);
+            const [currentLevelIdx, setCurrentLevelIdx] = useState(0);
+            const [gameState, setGameState] = useState('menu'); // 'menu', 'playing', 'success'
+            const [inventoryCount, setInventoryCount] = useState(0);
+            const [isAudioInit, setIsAudioInit] = useState(false);
+
+            // 게임 내부 상태 (Ref 관리)
+            const gameRef = useRef({
+                source: null,
+                target: null,
+                walls: [],
+                mirrors: [],
+                laserPoints: [],
+                particles: [],
+                interaction: { mode: 'none', target: null, offsetX: 0, offsetY: 0, startAngle: 0, lastPlayTime: 0 },
+                winTimer: 0
+            });
+
+            const initAudio = () => {
+                if (!audioCtx) {
+                    audioCtx = new AudioContext();
+                    setIsAudioInit(true);
+                }
+            };
+
+            const loadLevel = (idx) => {
+                const level = LEVELS[idx];
+                const gs = gameRef.current;
+
+                gs.source = { ...level.source };
+                gs.target = { ...level.target };
+                gs.walls = JSON.parse(JSON.stringify(level.walls)); // 깊은 복사
+
+                // 테두리 벽 추가
+                gs.walls.push(
+                    { p1: { x: 0, y: 0 }, p2: { x: CANVAS_WIDTH, y: 0 }, isBorder: true },
+                    { p1: { x: CANVAS_WIDTH, y: 0 }, p2: { x: CANVAS_WIDTH, y: CANVAS_HEIGHT }, isBorder: true },
+                    { p1: { x: CANVAS_WIDTH, y: CANVAS_HEIGHT }, p2: { x: 0, y: CANVAS_HEIGHT }, isBorder: true },
+                    { p1: { x: 0, y: CANVAS_HEIGHT }, p2: { x: 0, y: 0 }, isBorder: true }
+                );
+
+                gs.mirrors = [];
+                gs.laserPoints = [];
+                gs.particles = [];
+                gs.winTimer = 0;
+                gs.interaction = { mode: 'none', target: null };
+
+                setInventoryCount(level.inventory);
+                setCurrentLevelIdx(idx);
+                setGameState('playing');
+            };
+
+            const handleNextLevel = () => {
+                if (currentLevelIdx < LEVELS.length - 1) {
+                    loadLevel(currentLevelIdx + 1);
+                } else {
+                    setGameState('menu'); // 모든 레벨 클리어
+                    setCurrentLevelIdx(0);
+                }
+            };
+
+            const handleResetLevel = () => {
+                loadLevel(currentLevelIdx);
+            };
+
+            const addMirrorFromInventory = () => {
+                if (inventoryCount > 0) {
+                    gameRef.current.mirrors.push({
+                        x: CANVAS_WIDTH / 2,
+                        y: CANVAS_HEIGHT / 2,
+                        angle: 0,
+                        length: MIRROR_LENGTH
+                    });
+                    setInventoryCount(prev => prev - 1);
+                    playSound('place');
+                }
+            };
+
+            // 파티클 생성 함수 (성공 시 효과)
+            const spawnParticles = (x, y) => {
+                for (let i = 0; i < 30; i++) {
+                    gameRef.current.particles.push({
+                        x,
+                        y,
+                        vx: (Math.random() - 0.5) * 10,
+                        vy: (Math.random() - 0.5) * 10,
+                        life: 1.0,
+                        color: Math.random() > 0.5 ? '#39ff14' : '#fff'
+                    });
+                }
+            };
+
+            // 메인 게임 루프 (렌더링 & 로직)
+            useEffect(() => {
+                if (gameState !== 'playing') return;
+
+                const canvas = canvasRef.current;
+                const ctx = canvas.getContext('2d');
+                let animationId;
+
+                const draw = () => {
+                    const gs = gameRef.current;
+
+                    // 1. 레이저 경로 계산 (Physics)
+                    let ray = { 
+                        origin: { x: gs.source.x, y: gs.source.y }, 
+                        dir: { x: Math.cos(gs.source.angle), y: Math.sin(gs.source.angle) } 
+                    };
+                    gs.laserPoints = [ray.origin];
+                    let maxBounces = 20;
+                    let hitTarget = false;
+
+                    // 거울을 선분으로 변환
+                    const mirrorSegments = gs.mirrors.map(m => {
+                        const dx = Math.cos(m.angle) * (m.length / 2);
+                        const dy = Math.sin(m.angle) * (m.length / 2);
+                        return {
+                            p1: { x: m.x - dx, y: m.y - dy },
+                            p2: { x: m.x + dx, y: m.y + dy },
+                            mirrorRef: m
+                        };
+                    });
+
+                    const allSegments = [...gs.walls, ...mirrorSegments];
+
+                    for (let bounce = 0; bounce < maxBounces; bounce++) {
+                        let closestIntersection = null;
+                        for (const seg of allSegments) {
+                            const intersection = getIntersection(ray, seg);
+                            if (intersection) {
+                                if (!closestIntersection || intersection.distance < closestIntersection.distance) {
+                                    closestIntersection = intersection;
+                                }
+                            }
+                        }
+
+                        // 목표 지점과의 교차 확인 (레이저 선분과 목표 원의 거리)
+                        let endPoint = closestIntersection ? closestIntersection.point : { 
+                            x: ray.origin.x + ray.dir.x * 2000, 
+                            y: ray.origin.y + ray.dir.y * 2000 
+                        };
+
+                        // 현재 레이저 선분이 타겟을 통과하는지 확인
+                        const distToTarget = distToSegment(gs.target, ray.origin, endPoint);
+                        if (distToTarget <= TARGET_RADIUS) {
+                            // 타겟에 맞음! 경로를 타겟까지만 자름
+                            const distRayToTarget = Math.sqrt(dist2(ray.origin, gs.target));
+                            endPoint = { 
+                                x: ray.origin.x + ray.dir.x * distRayToTarget, 
+                                y: ray.origin.y + ray.dir.y * distRayToTarget 
+                            };
+                            gs.laserPoints.push(endPoint);
+                            hitTarget = true;
+                            break;
+                        }
+
+                        if (closestIntersection) {
+                            gs.laserPoints.push(closestIntersection.point);
+                            if (closestIntersection.segment.mirrorRef) {
+                                // 거울 반사 로직
+                                const mirror = closestIntersection.segment;
+                                const s = { x: mirror.p2.x - mirror.p1.x, y: mirror.p2.y - mirror.p1.y };
+                                
+                                // 거울의 노멀 벡터 (정규화)
+                                let nx = -s.y;
+                                let ny = s.x;
+                                const len = Math.sqrt(nx * nx + ny * ny);
+                                nx /= len;
+                                ny /= len;
+
+                                // 레이저 방향과 노멀의 내적
+                                const dot = ray.dir.x * nx + ray.dir.y * ny;
+                                // 입사각에 따라 노멀 방향 뒤집기 (양면 거울 처리)
+                                if (dot > 0) {
+                                    nx = -nx;
+                                    ny = -ny;
+                                }
+
+                                // 반사 벡터 계산: r' = r - 2(r·n)n
+                                const dot2 = ray.dir.x * nx + ray.dir.y * ny;
+                                ray = {
+                                    origin: closestIntersection.point,
+                                    dir: {
+                                        x: ray.dir.x - 2 * dot2 * nx,
+                                        y: ray.dir.y - 2 * dot2 * ny
+                                    }
+                                };
+                            } else {
+                                // 벽에 부딪힘 (반사 안함, 종료)
+                                break;
+                            }
+                        } else {
+                            // 아무것도 안 부딪히면 (화면 밖)
+                            gs.laserPoints.push(endPoint);
+                            break;
+                        }
+                    }
+
+                    // 승리 로직
+                    if (hitTarget) {
+                        if (gs.winTimer === 0) {
+                            playSound('success');
+                            spawnParticles(gs.target.x, gs.target.y);
+                        }
+                        gs.winTimer += 1;
+                        if (gs.winTimer > 60) {
+                            setGameState('success');
+                            return; // 루프 종료
+                        }
+                    } else {
+                        gs.winTimer = 0;
+                    }
+
+                    // 2. 화면 그리기
+                    ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+                    // 배경 그리드
+                    ctx.strokeStyle = '#2d3748'; // tailwind gray-800
+                    ctx.lineWidth = 1;
+                    for (let i = 0; i < CANVAS_WIDTH; i += 50) {
+                        ctx.beginPath();
+                        ctx.moveTo(i, 0);
+                        ctx.lineTo(i, CANVAS_HEIGHT);
+                        ctx.stroke();
+                    }
+                    for (let i = 0; i < CANVAS_HEIGHT; i += 50) {
+                        ctx.beginPath();
+                        ctx.moveTo(0, i);
+                        ctx.lineTo(CANVAS_WIDTH, i);
+                        ctx.stroke();
+                    }
+
+                    // 벽 그리기
+                    ctx.strokeStyle = '#718096'; // gray-500
+                    ctx.lineWidth = 8;
+                    ctx.lineCap = 'round';
+                    gs.walls.forEach(w => {
+                        // 테두리 벽은 안 그림
+                        if (w.isBorder) return;
+                        ctx.beginPath();
+                        ctx.moveTo(w.p1.x, w.p1.y);
+                        ctx.lineTo(w.p2.x, w.p2.y);
+                        ctx.stroke();
+                    });
+
+                    // 거울 그리기
+                    gs.mirrors.forEach(m => {
+                        ctx.save();
+                        ctx.translate(m.x, m.y);
+                        ctx.rotate(m.angle);
+
+                        // 조작 반경 (회전 핸들)
+                        ctx.beginPath();
+                        ctx.arc(0, 0, 40, 0, Math.PI * 2);
+                        ctx.fillStyle = 'rgba(66, 153, 225, 0.1)';
+                        ctx.fill();
+                        ctx.strokeStyle = '#4299e1'; // blue-500
+                        ctx.lineWidth = 2;
+                        ctx.setLineDash([5, 5]);
+                        ctx.stroke();
+                        ctx.setLineDash([]);
+
+                        // 거울 본체
+                        ctx.beginPath();
+                        ctx.moveTo(-m.length / 2, 0);
+                        ctx.lineTo(m.length / 2, 0);
+                        ctx.strokeStyle = '#00ffff'; // 옥색 반사면
+                        ctx.lineWidth = 6;
+                        ctx.stroke();
+
+                        // 회전 손잡이 (오른쪽 끝)
+                        ctx.beginPath();
+                        ctx.arc(m.length / 2 + 10, 0, 8, 0, Math.PI * 2);
+                        ctx.fillStyle = '#ebf8ff';
+                        ctx.fill();
+                        ctx.stroke();
+
+                        // 중심 이동 손잡이
+                        ctx.beginPath();
+                        ctx.arc(0, 0, 6, 0, Math.PI * 2);
+                        ctx.fillStyle = '#2b6cb0';
+                        ctx.fill();
+
+                        ctx.restore();
+                    });
+
+                    // 타겟 그리기
+                    const t = Date.now() / 200;
+                    ctx.save();
+                    ctx.translate(gs.target.x, gs.target.y);
+                    ctx.beginPath();
+                    ctx.arc(0, 0, TARGET_RADIUS, 0, Math.PI * 2);
+                    ctx.fillStyle = hitTarget ? '#39ff14' : '#f56565'; // 맞으면 초록, 아니면 빨강
+                    ctx.shadowBlur = 20;
+                    ctx.shadowColor = ctx.fillStyle;
+                    ctx.fill();
+
+                    // 타겟 펄스 효과
+                    if (!hitTarget) {
+                        ctx.beginPath();
+                        ctx.arc(0, 0, TARGET_RADIUS + Math.sin(t) * 5 + 5, 0, Math.PI * 2);
+                        ctx.strokeStyle = `rgba(245, 101, 101, ${0.5 - Math.sin(t) * 0.2})`;
+                        ctx.lineWidth = 3;
+                        ctx.stroke();
+                    }
+                    ctx.restore();
+
+                    // 광원 그리기
+                    ctx.save();
+                    ctx.translate(gs.source.x, gs.source.y);
+
+                    // 광원 회전 핸들
+                    ctx.beginPath();
+                    ctx.arc(0, 0, 35, 0, Math.PI * 2);
+                    ctx.fillStyle = 'rgba(236, 201, 75, 0.1)';
+                    ctx.fill();
+                    ctx.strokeStyle = '#ecc94b';
+                    ctx.lineWidth = 2;
+                    ctx.setLineDash([4, 4]);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+
+                    ctx.rotate(gs.source.angle);
+
+                    // 광원 기기
+                    ctx.fillStyle = '#4a5568';
+                    ctx.fillRect(-15, -15, 30, 30);
+                    ctx.fillStyle = '#39ff14';
+                    ctx.fillRect(15, -5, 10, 10); // 렌즈
+
+                    // 광원 방향 지시자
+                    ctx.beginPath();
+                    ctx.moveTo(30, 0);
+                    ctx.lineTo(40, -5);
+                    ctx.lineTo(40, 5);
+                    ctx.closePath();
+                    ctx.fillStyle = '#ecc94b';
+                    ctx.fill();
+                    ctx.restore();
+
+                    // 레이저 그리기
+                    if (gs.laserPoints.length > 1) {
+                        ctx.save();
+                        ctx.beginPath();
+                        ctx.moveTo(gs.laserPoints[0].x, gs.laserPoints[0].y);
+                        for (let i = 1; i < gs.laserPoints.length; i++) { 
+                            ctx.lineTo(gs.laserPoints[i].x, gs.laserPoints[i].y); 
+                        } 
+                        // 코어
+                        ctx.lineWidth = 3; 
+                        ctx.strokeStyle = '#fff'; 
+                        ctx.stroke(); 
+                        
+                        // 글로우 효과
+                        ctx.lineWidth = 6; 
+                        ctx.strokeStyle = 'rgba(57, 255, 20, 0.5)'; // 네온 그린 
+                        ctx.shadowBlur = 15;
+                        ctx.shadowColor = '#39ff14'; 
+                        ctx.stroke(); 
+                        
+                        ctx.lineWidth = 12;
+                        ctx.strokeStyle = 'rgba(57, 255, 20, 0.2)'; 
+                        ctx.stroke(); 
+                        ctx.restore(); 
+                    } 
+                    
+                    // 파티클 그리기
+                    gs.particles.forEach((p, i) => {
+                        p.x += p.vx;
+                        p.y += p.vy;
+                        p.life -= 0.02;
+                        ctx.globalAlpha = Math.max(0, p.life);
+                        ctx.fillStyle = p.color;
+                        ctx.beginPath();
+                        ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+                        ctx.fill();
+                    });
+                    ctx.globalAlpha = 1.0;
+                    gs.particles = gs.particles.filter(p => p.life > 0);
+
+                    animationId = requestAnimationFrame(draw);
+                };
+
+                draw();
+
+                return () => cancelAnimationFrame(animationId);
+            }, [gameState]);
+
+            // 마우스/터치 이벤트 핸들링
+            const getMousePos = (e) => {
+                const canvas = canvasRef.current;
+                const rect = canvas.getBoundingClientRect();
+                const scaleX = canvas.width / rect.width;
+                const scaleY = canvas.height / rect.height;
+
+                let clientX = e.clientX;
+                let clientY = e.clientY;
+
+                if (e.touches && e.touches.length > 0) {
+                    clientX = e.touches[0].clientX;
+                    clientY = e.touches[0].clientY;
+                }
+
+                return {
+                    x: (clientX - rect.left) * scaleX,
+                    y: (clientY - rect.top) * scaleY
+                };
+            };
+
+            const handlePointerDown = (e) => {
+                if (gameState !== 'playing') return;
+                initAudio();
+                const pos = getMousePos(e);
+                const gs = gameRef.current;
+
+                // 1. 광원 회전 확인
+                const distToSource = Math.sqrt(dist2(pos, gs.source));
+                if (distToSource <= 40) { 
+                    gs.interaction = { mode: 'rotate_source', target: gs.source };
+                    return; 
+                } 
+                
+                // 2. 거울 조작 확인 (역순으로 확인하여 위에 그려진 것 먼저 선택) 
+                for (let i = gs.mirrors.length - 1; i >= 0; i--) {
+                    const m = gs.mirrors[i];
+                    // 회전 핸들 (거울 중심에서 오른쪽으로 length/2 + 10 위치)
+                    const handleX = m.x + Math.cos(m.angle) * (m.length / 2 + 10);
+                    const handleY = m.y + Math.sin(m.angle) * (m.length / 2 + 10);
+
+                    if (Math.sqrt(dist2(pos, { x: handleX, y: handleY })) <= 20) { 
+                        gs.interaction = { mode: 'rotate_mirror', target: m }; 
+                        return; 
+                    } 
+                    // 이동 핸들 (중심점 반경) 
+                    if (Math.sqrt(dist2(pos, m)) <= 30) { 
+                        gs.interaction = { 
+                            mode: 'drag_mirror', 
+                            target: m,
+                            offsetX: pos.x - m.x, 
+                            offsetY: pos.y - m.y 
+                        }; 
+                        return; 
+                    } 
+                } 
+            }; 
+
+            const handlePointerMove = (e) => {
+                const gs = gameRef.current;
+                if (gs.interaction.mode === 'none') return;
+                e.preventDefault(); // 스크롤 방지
+
+                const pos = getMousePos(e);
+
+                if (gs.interaction.mode === 'drag_mirror') {
+                    gs.interaction.target.x = pos.x - gs.interaction.offsetX;
+                    gs.interaction.target.y = pos.y - gs.interaction.offsetY;
+                }
+                else if (gs.interaction.mode === 'rotate_mirror') {
+                    const m = gs.interaction.target;
+                    m.angle = Math.atan2(pos.y - m.y, pos.x - m.x);
+
+                    // 회전 효과음 스로틀링
+                    const now = Date.now();
+                    if (now - gs.interaction.lastPlayTime > 100) {
+                        playSound('rotate');
+                        gs.interaction.lastPlayTime = now;
+                    }
+                }
+                else if (gs.interaction.mode === 'rotate_source') {
+                    gs.source.angle = Math.atan2(pos.y - gs.source.y, pos.x - gs.source.x);
+                }
+            };
+
+            const handlePointerUp = () => {
+                gameRef.current.interaction = { mode: 'none', target: null };
+            };
+
+            return (
+                <div className="flex flex-col items-center justify-center min-h-screen bg-gray-900 text-white font-sans overflow-hidden">
+                    {/* 헤더 */}
+                    <header className="w-full max-w-6xl flex justify-between items-center p-4 bg-gray-800 rounded-b-xl shadow-lg z-10">
+                        <div>
+                            <h1 className="text-2xl font-bold text-green-400">빛의 마법사 🔦</h1>
+                            <p className="text-gray-300 text-sm">초등학교 5학년 과학: 빛의 직진과 반사</p>
+                        </div>
+                        {gameState === 'playing' && (
+                            <div className="flex gap-4">
+                                <button onClick={handleResetLevel} className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm font-medium transition">
+                                    다시 하기
+                                </button>
+                                <button onClick={() => setGameState('menu')} className="px-4 py-2 bg-red-900 hover:bg-red-800 rounded-lg text-sm font-medium transition">
+                                    메뉴로
+                                </button>
+                            </div>
+                        )}
+                    </header>
+
+                    {/* 메인 콘텐츠 영역 */}
+                    <main className="flex-1 flex w-full max-w-6xl p-4 gap-4 items-center justify-center relative">
+                        {/* 시작 메뉴 */}
+                        {gameState === 'menu' && (
+                            <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-900 bg-opacity-90 z-20">
+                                <div className="bg-gray-800 p-8 rounded-2xl shadow-2xl max-w-md text-center border border-gray-700">
+                                    <h2 className="text-3xl font-extrabold text-white mb-4">빛의 거울 퍼즐</h2>
+                                    <p className="text-gray-300 mb-6 font-medium">
+                                        광원에서 나오는 <span className="text-green-400 font-bold">초록색 빛</span>은 직진합니다.<br />
+                                        거울을 알맞게 배치하고 각도를 조절하여
+                                        <span className="text-red-400 font-bold"> 목표 지점</span>에 빛을 도달시키세요!
+                                    </p>
+                                    <div className="space-y-3">
+                                        {LEVELS.map((lvl, idx) => (
+                                            <button key={idx} onClick={() => { initAudio(); loadLevel(idx); }} className="w-full py-3 bg-blue-600 hover:bg-blue-500 rounded-lg font-bold text-lg transition transform hover:scale-105">
+                                                {lvl.title}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* 성공 모달 */}
+                        {gameState === 'success' && (
+                            <div className="absolute inset-0 flex flex-col items-center justify-center bg-black bg-opacity-70 z-20">
+                                <div className="bg-gray-800 p-8 rounded-2xl shadow-2xl max-w-sm text-center border-2 border-green-400 animate-bounce">
+                                    <h2 className="text-4xl font-extrabold text-green-400 mb-2">성공! 🎉</h2>
+                                    <p className="text-gray-200 mb-6">빛을 완벽하게 반사시켰어요!</p>
+                                    <button onClick={handleNextLevel} className="w-full py-3 bg-green-500 hover:bg-green-400 text-gray-900 rounded-lg font-bold text-xl transition">
+                                        {currentLevelIdx < LEVELS.length - 1 ? '다음 단계로' : '처음으로'}
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* 게임 화면 (캔버스 & UI) */}
+                        <div className={`flex flex-col lg:flex-row gap-6 w-full ${gameState !== 'playing' ? 'blur-sm pointer-events-none' : ''}`}>
+                            {/* 게임 보드 */}
+                            <div className="relative border-4 border-gray-700 rounded-xl overflow-hidden bg-black shadow-2xl flex-shrink-0" style={{ width: '100%', maxWidth: `${CANVAS_WIDTH}px`, aspectRatio: `${CANVAS_WIDTH}/${CANVAS_HEIGHT}` }}>
+                                <canvas ref={canvasRef} width={CANVAS_WIDTH} height={CANVAS_HEIGHT} className="w-full h-full touch-none" onMouseDown={handlePointerDown} onMouseMove={handlePointerMove} onMouseUp={handlePointerUp} onMouseLeave={handlePointerUp} onTouchStart={handlePointerDown} onTouchMove={handlePointerMove} onTouchEnd={handlePointerUp} onTouchCancel={handlePointerUp} />
+                            </div>
+
+                            {/* 사이드 패널 (설명 및 인벤토리) */}
+                            <div className="flex-1 flex flex-col gap-4">
+                                {/* 미션 설명 */}
+                                <div className="bg-gray-800 p-5 rounded-xl border border-gray-700">
+                                    <h3 className="text-xl font-bold text-blue-400 mb-2">
+                                        {LEVELS[currentLevelIdx]?.title}
+                                    </h3>
+                                    <p className="text-gray-300 text-sm leading-relaxed font-medium">
+                                        {LEVELS[currentLevelIdx]?.desc}
+                                    </p>
+                                    <div className="mt-4 text-xs text-gray-400">
+                                        <p>💡 <b>조작 방법:</b></p>
+                                        <ul className="list-disc pl-4 mt-1 space-y-1">
+                                            <li>광원(왼쪽 기계)의 노란 테두리를 돌려 빛의 방향을 바꿉니다.</li>
+                                            <li>아래 상자에서 거울을 추가합니다.</li>
+                                            <li>거울의 중앙을 잡고 이동, 테두리의 점을 잡고 회전시킵니다.</li>
+                                        </ul>
+                                    </div>
+                                </div>
+
+                                {/* 거울 보관함 */}
+                                <div className="bg-gray-800 p-5 rounded-xl border border-gray-700 flex-1">
+                                    <h3 className="text-lg font-bold text-white mb-4">도구 상자</h3>
+                                    <div className="flex flex-col items-center p-6 bg-gray-900 rounded-lg border border-gray-600">
+                                        <div className="text-gray-400 mb-2 text-sm font-medium">사용 가능한 거울</div>
+                                        <div className="text-4xl font-extrabold text-blue-400 mb-4">
+                                            {inventoryCount} <span className="text-lg text-gray-500">개</span>
+                                        </div>
+                                        <button onClick={addMirrorFromInventory} disabled={inventoryCount === 0 || gameState !== 'playing'} className={`w-full py-3 px-2 rounded-lg font-bold text-[1.1rem] flex items-center justify-center gap-1 transition whitespace-nowrap ${inventoryCount > 0 ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg' : 'bg-gray-700 text-gray-500 cursor-not-allowed'}`}>
+                                            <span className="text-2xl font-bold">+</span> <span>보드에 거울 놓기</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </main>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>

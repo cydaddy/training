@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SVG 분수 학습 도우미</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+
+        .fraction-input::-webkit-inner-spin-button,
+        .fraction-input::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        .success-animation {
+            animation: pop 0.5s ease-out;
+        }
+
+        @keyframes pop {
+            0% {
+                transform: scale(0.9);
+            }
+
+            50% {
+                transform: scale(1.05);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+    </style>
+</head>
+
+<body class="min-h-screen flex items-center justify-center p-4">
+
+    <div id="app" class="bg-white w-full max-w-2xl rounded-3xl shadow-xl overflow-hidden border border-slate-100">
+        <!-- Header Section -->
+        <div class="bg-indigo-600 p-6 text-white flex justify-between items-center">
+            <div>
+                <h1 class="text-2xl font-bold">분수 퀴즈 대모험</h1>
+                <p class="text-indigo-100 text-sm">그림을 보고 정답을 맞춰보세요!</p>
+            </div>
+            <div class="text-right">
+                <span class="text-xs uppercase tracking-wider opacity-75">현재 점수</span>
+                <div id="score" class="text-3xl font-black">0</div>
+            </div>
+        </div>
+
+        <div class="p-8">
+            <div id="problem-area" class="flex flex-col md:flex-row items-center justify-around gap-8 mb-10">
+                <!-- SVG Fractions will be injected here -->
+            </div>
+
+            <div class="flex flex-col items-center gap-6">
+                <div class="flex items-center gap-4">
+                    <div class="flex flex-col items-center">
+                        <input type="number" id="input-num" placeholder="?"
+                            class="fraction-input w-20 h-16 text-3xl text-center border-4 border-indigo-200 rounded-2xl focus:border-indigo-500 outline-none transition-all">
+                        <div class="w-24 h-1.5 bg-slate-800 my-2 rounded-full"></div>
+                        <input type="number" id="input-den" placeholder="?"
+                            class="fraction-input w-20 h-16 text-3xl text-center border-4 border-indigo-200 rounded-2xl focus:border-indigo-500 outline-none transition-all">
+                    </div>
+                </div>
+
+                <div id="feedback" class="h-8 text-lg font-semibold transition-all duration-300"></div>
+
+                <div class="flex gap-4 w-full">
+                    <button onclick="checkAnswer()" id="check-btn"
+                        class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-2xl shadow-lg transition-transform active:scale-95">정답
+                        확인</button>
+                    <button onclick="generateProblem()"
+                        class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-4 rounded-2xl transition-transform active:scale-95">다음
+                        문제</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentProblem = {
+            f1: { n: 1, d: 4 },
+            f2: { n: 2, d: 4 },
+            op: '+',
+            ans: { n: 3, d: 4 }
+        };
+        let score = 0;
+
+        // GCD for simplification
+        const gcd = (a, b) => b === 0 ? a : gcd(b, a % b);
+
+        function createFractionSVG(num, den, size = 120, color = "#6366f1") {
+            const center = size / 2;
+            const radius = size * 0.45;
+            let paths = '';
+
+            // Draw Background Circle
+            paths += `<circle cx="${center}" cy="${center}" r="${radius}" fill="#f1f5f9" stroke="#e2e8f0" stroke-width="2" />`;
+
+            if (den > 0) {
+                const anglePerSlice = (2 * Math.PI) / den;
+
+                // Draw Each Slice
+                for (let i = 0; i < den; i++) {
+                    const startAngle = i * anglePerSlice - Math.PI / 2;
+                    const endAngle = (i + 1) * anglePerSlice - Math.PI / 2;
+
+                    const x1 = center + radius * Math.cos(startAngle);
+                    const y1 = center + radius * Math.sin(startAngle);
+                    const x2 = center + radius * Math.cos(endAngle);
+                    const y2 = center + radius * Math.sin(endAngle);
+
+                    const largeArcFlag = anglePerSlice > Math.PI ? 1 : 0;
+                    const fillColor = i < num ? color : 'transparent';
+
+                    paths += `
+                        <path d="M ${center} ${center} L ${x1} ${y1} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2} Z" 
+                              fill="${fillColor}" 
+                              stroke="#fff" 
+                              stroke-width="1.5" />
+                    `;
+                }
+            }
+
+            return `
+                <div class="flex flex-col items-center gap-3">
+                    <svg width="${size}" height="${size}">${paths}</svg>
+                    <div class="flex flex-col items-center font-bold text-slate-700">
+                        <span>${num}</span>
+                        <div class="w-8 h-0.5 bg-slate-700 my-0.5"></div>
+                        <span>${den}</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        function generateProblem() {
+            // Reset UI
+            document.getElementById('feedback').textContent = '';
+            document.getElementById('input-num').value = '';
+            document.getElementById('input-den').value = '';
+            document.getElementById('input-num').classList.remove('border-green-500', 'border-red-500');
+            document.getElementById('input-den').classList.remove('border-green-500', 'border-red-500');
+
+            const commonDen = Math.floor(Math.random() * 7) + 2; // 2 to 8
+            const n1 = Math.floor(Math.random() * (commonDen - 1)) + 1;
+
+            // Choose addition or subtraction
+            const isAdd = Math.random() > 0.4;
+            let n2, ansN;
+
+            if (isAdd) {
+                // Ensure sum doesn't exceed denominator for simple visualization
+                n2 = Math.floor(Math.random() * (commonDen - n1)) + 1;
+                ansN = n1 + n2;
+                currentProblem.op = '+';
+            } else {
+                n2 = Math.floor(Math.random() * n1) + 1;
+                ansN = n1 - n2;
+                currentProblem.op = '-';
+            }
+
+            currentProblem.f1 = { n: n1, d: commonDen };
+            currentProblem.f2 = { n: n2, d: commonDen };
+            currentProblem.ans = { n: ansN, d: commonDen };
+
+            renderProblem();
+        }
+
+        function renderProblem() {
+            const area = document.getElementById('problem-area');
+            const opSign = `<div class="text-4xl font-bold text-slate-400">${currentProblem.op === '+' ? '＋' : '－'}</div>`;
+            const equalSign = `<div class="text-4xl font-bold text-slate-400">＝</div>`;
+
+            area.innerHTML = `
+                ${createFractionSVG(currentProblem.f1.n, currentProblem.f1.d)}
+                ${opSign}
+                ${createFractionSVG(currentProblem.f2.n, currentProblem.f2.d)}
+                ${equalSign}
+                <div class="flex flex-col items-center gap-3">
+                    <div class="w-[120px] h-[120px] rounded-full border-4 border-dashed border-slate-200 flex items-center justify-center text-slate-300 text-4xl font-bold">?</div>
+                    <div class="text-slate-400 italic text-sm">정답을 입력하세요</div>
+                </div>
+            `;
+        }
+
+        function checkAnswer() {
+            const userN = parseInt(document.getElementById('input-num').value);
+            const userD = parseInt(document.getElementById('input-den').value);
+            const feedback = document.getElementById('feedback');
+
+            if (isNaN(userN) || isNaN(userD)) {
+                feedback.className = "h-8 text-lg font-semibold text-orange-500";
+                feedback.textContent = "빈칸을 모두 채워주세요!";
+                return;
+            }
+
+            // Check math equality (handles equivalent fractions like 1/2 vs 2/4)
+            const isCorrect = (userN / userD) === (currentProblem.ans.n / currentProblem.ans.d);
+
+            if (isCorrect) {
+                score += 10;
+                document.getElementById('score').textContent = score;
+                feedback.className = "h-8 text-lg font-semibold text-green-500 success-animation";
+                feedback.textContent = "참 잘했어요! 정답입니다! 🎉";
+                document.getElementById('input-num').classList.add('border-green-500');
+                document.getElementById('input-den').classList.add('border-green-500');
+
+                // Show final result in the SVG area
+                const area = document.getElementById('problem-area');
+                const lastDiv = area.lastElementChild;
+                lastDiv.innerHTML = createFractionSVG(userN, userD, 120, "#10b981");
+            } else {
+                feedback.className = "h-8 text-lg font-semibold text-red-500";
+                feedback.textContent = "다시 한번 생각해볼까요? 🧐";
+                document.getElementById('input-num').classList.add('border-red-500');
+                document.getElementById('input-den').classList.add('border-red-500');
+            }
+        }
+
+        window.onload = generateProblem;
+    </script>
+</body>
+
+</html>
