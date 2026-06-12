@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>디자인 테마 쇼케이스</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            transition: all 0.5s ease;
+        }
+
+        /* -------------------------------------------------------------------------- */
+        /* 1. Claymorphism (클레이모피즘) */
+        /* -------------------------------------------------------------------------- */
+        .theme-clay {
+            background-color: #e0e5ec;
+            color: #4a5568;
+        }
+        .theme-clay .card {
+            background-color: #e0e5ec;
+            border-radius: 30px;
+            box-shadow: 
+                9px 9px 16px rgb(163,177,198,0.6), 
+                -9px -9px 16px rgba(255,255,255, 0.5),
+                inset 3px 3px 7px rgba(136, 165, 191, 0.48),
+                inset -3px -3px 7px #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 2rem;
+            transition: transform 0.2s ease;
+        }
+        .theme-clay .card:hover {
+            transform: translateY(-5px);
+        }
+        .theme-clay .btn {
+            background-color: #e0e5ec;
+            border-radius: 20px;
+            box-shadow: 
+                5px 5px 10px rgb(163,177,198,0.6), 
+                -5px -5px 10px rgba(255,255,255, 0.5);
+            padding: 0.75rem 1.5rem;
+            font-weight: bold;
+            color: #4a5568;
+            border: none;
+            cursor: pointer;
+        }
+        .theme-clay .btn:active {
+            box-shadow: 
+                inset 5px 5px 10px rgb(163,177,198,0.6), 
+                inset -5px -5px 10px rgba(255,255,255, 0.5);
+        }
+        .theme-clay select {
+            background-color: #e0e5ec;
+            border-radius: 15px;
+            box-shadow: inset 5px 5px 10px rgb(163,177,198,0.6), inset -5px -5px 10px rgba(255,255,255, 0.5);
+            padding: 0.5rem 1rem;
+            border: none;
+            color: #4a5568;
+            outline: none;
+        }
+
+        /* -------------------------------------------------------------------------- */
+        /* 2. Neo Brutalism (네오 브루탈리즘) */
+        /* -------------------------------------------------------------------------- */
+        .theme-neobrutal {
+            background-color: #fcebd5;
+            color: #000;
+        }
+        .theme-neobrutal .card {
+            background-color: #fff;
+            border: 4px solid #000;
+            border-radius: 0;
+            box-shadow: 8px 8px 0px #000;
+            padding: 2rem;
+            transition: all 0.2s ease;
+        }
+        .theme-neobrutal .card:hover {
+            transform: translate(-4px, -4px);
+            box-shadow: 12px 12px 0px #000;
+        }
+        .theme-neobrutal .btn {
+            background-color: #ff5e5e;
+            border: 3px solid #000;
+            border-radius: 0;
+            box-shadow: 4px 4px 0px #000;
+            padding: 0.75rem 1.5rem;
+            font-weight: 900;
+            color: #000;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.1s ease;
+        }
+        .theme-neobrutal .btn:active {
+            transform: translate(4px, 4px);
+            box-shadow: 0px 0px 0px #000;
+        }
+        .theme-neobrutal select {
+            background-color: #fff;
+            border: 3px solid #000;
+            border-radius: 0;
+            box-shadow: 4px 4px 0px #000;
+            padding: 0.5rem 1rem;
+            font-weight: bold;
+            color: #000;
+            outline: none;
+        }
+        .theme-neobrutal h1, .theme-neobrutal h2 {
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: -1px;
+        }
+
+        /* -------------------------------------------------------------------------- */
+        /* 3. Aurora UI (오로라 UI) */
+        /* -------------------------------------------------------------------------- */
+        .theme-aurora {
+            background: linear-gradient(135deg, #1a0b2e, #0b1a2e);
+            color: #fff;
+            position: relative;
+            overflow-x: hidden; /* 세로 스크롤을 허용하기 위해 가로 오버플로우만 숨김 */
+            min-height: 100vh;
+        }
+        .theme-aurora::before, .theme-aurora::after {
+            content: '';
+            position: fixed; /* 스크롤을 내려도 오로라 배경이 고정되어 보이도록 변경 */
+            width: 50vw;
+            height: 50vw;
+            border-radius: 50%;
+            filter: blur(100px);
+            z-index: 0;
+            opacity: 0.6;
+            animation: moveAurora 20s infinite alternate linear;
+        }
+        .theme-aurora::before {
+            background: rgba(147, 51, 234, 0.4);
+            top: -10%;
+            left: -10%;
+        }
+        .theme-aurora::after {
+            background: rgba(59, 130, 246, 0.4);
+            bottom: -10%;
+            right: -10%;
+            animation-delay: -10s;
+        }
+        @keyframes moveAurora {
+            0% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(10%, 20%) scale(1.1); }
+            100% { transform: translate(-10%, -10%) scale(0.9); }
+        }
+        .theme-aurora .content-wrapper {
+            position: relative;
+            z-index: 1;
+        }
+        .theme-aurora .card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            padding: 2rem;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+        }
+        .theme-aurora .btn {
+            background: linear-gradient(90deg, rgba(147, 51, 234, 0.8), rgba(59, 130, 246, 0.8));
+            border: none;
+            border-radius: 12px;
+            padding: 0.75rem 1.5rem;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            transition: opacity 0.3s;
+        }
+        .theme-aurora .btn:hover {
+            opacity: 0.9;
+        }
+        .theme-aurora select {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 0.5rem 1rem;
+            color: white;
+            outline: none;
+        }
+        .theme-aurora select option {
+            background-color: #1a0b2e;
+            color: white;
+        }
+
+        /* -------------------------------------------------------------------------- */
+        /* 4. Material Design (머티리얼 디자인) */
+        /* -------------------------------------------------------------------------- */
+        .theme-material {
+            background-color: #fafafa;
+            color: #212121;
+        }
+        .theme-material .card {
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1), 0 1px 3px rgba(0,0,0,0.08);
+            padding: 24px;
+            transition: box-shadow 0.3s cubic-bezier(.25,.8,.25,1);
+        }
+        .theme-material .card:hover {
+            box-shadow: 0 14px 28px rgba(0,0,0,0.25), 0 10px 10px rgba(0,0,0,0.22);
+        }
+        .theme-material .btn {
+            background-color: #6200ee;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 10px 24px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 1.25px;
+            box-shadow: 0 3px 1px -2px rgba(0,0,0,.2), 0 2px 2px 0 rgba(0,0,0,.14), 0 1px 5px 0 rgba(0,0,0,.12);
+            cursor: pointer;
+            transition: background-color 0.2s, box-shadow 0.2s;
+        }
+        .theme-material .btn:hover {
+            background-color: #7b1fa2;
+            box-shadow: 0 2px 4px -1px rgba(0,0,0,.2), 0 4px 5px 0 rgba(0,0,0,.14), 0 1px 10px 0 rgba(0,0,0,.12);
+        }
+        .theme-material select {
+            background-color: transparent;
+            border: none;
+            border-bottom: 2px solid #6200ee;
+            border-radius: 4px 4px 0 0;
+            padding: 8px;
+            font-size: 16px;
+            color: #212121;
+            outline: none;
+            background-color: rgba(0,0,0,0.04);
+        }
+
+        /* -------------------------------------------------------------------------- */
+        /* 5. Bento Box UI (벤토박스 UI) */
+        /* -------------------------------------------------------------------------- */
+        .theme-bento {
+            background-color: #f2f2f7;
+            color: #1c1c1e;
+        }
+        .theme-bento .bento-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 16px;
+        }
+        /* 벤토박스 테마일 때 카드 컨테이너의 flex 레이아웃을 덮어씀 */
+        .theme-bento #card-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+            flex-direction: initial !important; /* 기존 flex 속성 무효화 */
+        }
+        @media (max-width: 640px) {
+             .theme-bento #card-container {
+                grid-template-columns: 1fr;
+             }
+        }
+        .theme-bento .card {
+            background-color: #ffffff;
+            border-radius: 24px;
+            padding: 24px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        /* 첫 번째 카드를 크게 만들기 */
+        .theme-bento .card:first-child {
+            grid-column: 1 / -1;
+            background: linear-gradient(135deg, #007aff, #5ac8fa);
+            color: white;
+        }
+        .theme-bento .btn {
+            background-color: #1c1c1e;
+            color: #ffffff;
+            border: none;
+            border-radius: 12px;
+            padding: 12px 20px;
+            font-weight: 600;
+            cursor: pointer;
+            align-self: flex-start;
+        }
+        .theme-bento .card:first-child .btn {
+            background-color: #ffffff;
+            color: #007aff;
+        }
+        .theme-bento select {
+            background-color: #e5e5ea;
+            border: none;
+            border-radius: 12px;
+            padding: 10px 16px;
+            font-weight: 500;
+            color: #1c1c1e;
+            outline: none;
+        }
+
+        /* -------------------------------------------------------------------------- */
+        /* 6. Bauhaus (바우하우스) */
+        /* -------------------------------------------------------------------------- */
+        .theme-bauhaus {
+            background-color: #f4f0e6;
+            color: #1a1a1a;
+        }
+        .theme-bauhaus .card {
+            background-color: #ffffff;
+            border: 8px solid #1a1a1a;
+            border-radius: 0;
+            padding: 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+        /* 기하학적 도형 추가 */
+        .theme-bauhaus .card::before {
+            content: '';
+            position: absolute;
+            top: -20px;
+            right: -20px;
+            width: 100px;
+            height: 100px;
+            background-color: #e3000f; /* 바우하우스 레드 */
+            border-radius: 50%;
+            z-index: 0;
+        }
+        .theme-bauhaus .card:nth-child(2)::before {
+            background-color: #005a9b; /* 바우하우스 블루 */
+            border-radius: 0;
+            width: 80px;
+            height: 120px;
+            bottom: -10px;
+            right: 20px;
+            top: auto;
+        }
+        .theme-bauhaus .card:nth-child(3)::before {
+             background-color: #fbd600; /* 바우하우스 옐로우 */
+             border-radius: 0;
+             clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+             width: 120px;
+             height: 100px;
+             bottom: -20px;
+             left: -20px;
+             top: auto;
+             right: auto;
+        }
+        .theme-bauhaus .card > * {
+            position: relative;
+            z-index: 1;
+        }
+        .theme-bauhaus h1, .theme-bauhaus h2 {
+            font-family: 'Arial', sans-serif;
+            font-weight: bold;
+            letter-spacing: -0.5px;
+        }
+        .theme-bauhaus .btn {
+            background-color: #1a1a1a;
+            color: #f4f0e6;
+            border: none;
+            border-radius: 0;
+            padding: 1rem 2rem;
+            font-weight: bold;
+            text-transform: lowercase;
+            cursor: pointer;
+        }
+        .theme-bauhaus .btn:hover {
+            background-color: #e3000f;
+        }
+        .theme-bauhaus select {
+            background-color: #ffffff;
+            border: 4px solid #1a1a1a;
+            border-radius: 0;
+            padding: 0.5rem 1rem;
+            font-weight: bold;
+            color: #1a1a1a;
+            outline: none;
+            appearance: none; /* 기본 화살표 숨김 */
+        }
+
+        /* -------------------------------------------------------------------------- */
+        /* 7. Flat Design (플랫 디자인) */
+        /* -------------------------------------------------------------------------- */
+        .theme-flat {
+            background-color: #ecf0f1;
+            color: #2c3e50;
+        }
+        .theme-flat .card {
+            background-color: #ffffff;
+            border-radius: 4px;
+            padding: 2rem;
+            /* 그림자, 그라데이션 제거 */
+            box-shadow: none;
+            border: none;
+            margin-bottom: 1rem;
+        }
+        .theme-flat h1, .theme-flat h2 {
+            color: #2980b9;
+        }
+        .theme-flat .btn {
+            background-color: #27ae60;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .theme-flat .btn:hover {
+            background-color: #2ecc71;
+        }
+        .theme-flat select {
+            background-color: #bdc3c7;
+            border: none;
+            border-radius: 4px;
+            padding: 0.75rem 1rem;
+            color: #2c3e50;
+            outline: none;
+        }
+
+        /* -------------------------------------------------------------------------- */
+        /* 8. Cyberpunk (사이버펑크) */
+        /* -------------------------------------------------------------------------- */
+        .theme-cyberpunk {
+            background-color: #0d0221;
+            color: #0ff;
+            font-family: 'Courier New', Courier, monospace;
+        }
+        .theme-cyberpunk::before {
+            content: "SYSTEM OFFLINE // REBOOTING...";
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 5rem;
+            color: rgba(255, 0, 85, 0.1);
+            z-index: 0;
+            pointer-events: none;
+            white-space: nowrap;
+        }
+        .theme-cyberpunk .content-wrapper {
+            position: relative;
+            z-index: 1;
+        }
+        .theme-cyberpunk .card {
+            background-color: rgba(0, 0, 0, 0.7);
+            border: 2px solid #0ff;
+            border-radius: 0;
+            padding: 2rem;
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.3), inset 0 0 10px rgba(0, 255, 255, 0.2);
+            position: relative;
+            clip-path: polygon(0 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%);
+        }
+        .theme-cyberpunk .card::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 20px;
+            height: 20px;
+            background-color: #0ff;
+            clip-path: polygon(100% 0, 0 100%, 100% 100%);
+        }
+        .theme-cyberpunk h1, .theme-cyberpunk h2 {
+            color: #f0f;
+            text-shadow: 2px 2px 0px #0ff, -2px -2px 0px #000;
+            text-transform: uppercase;
+        }
+        .theme-cyberpunk .btn {
+            background-color: #f0f;
+            color: #000;
+            border: 2px solid #0ff;
+            padding: 0.75rem 1.5rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            cursor: pointer;
+            box-shadow: 4px 4px 0px #0ff;
+            transition: all 0.1s;
+        }
+        .theme-cyberpunk .btn:hover {
+            background-color: #0ff;
+            color: #000;
+            border-color: #f0f;
+            box-shadow: 4px 4px 0px #f0f;
+        }
+        .theme-cyberpunk select {
+            background-color: #000;
+            border: 1px solid #0ff;
+            color: #0ff;
+            padding: 0.5rem 1rem;
+            outline: none;
+            box-shadow: 0 0 5px #0ff;
+        }
+        .theme-cyberpunk select option {
+            background-color: #000;
+        }
+
+        /* -------------------------------------------------------------------------- */
+        /* 9. Synthwave (신스웨이브) */
+        /* -------------------------------------------------------------------------- */
+        .theme-synthwave {
+            background: linear-gradient(to bottom, #2b1055 0%, #7597de 100%);
+            color: #fff;
+            min-height: 100vh;
+        }
+        /* 그리드 바닥 효과 */
+        .theme-synthwave::before {
+            content: '';
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 50vh;
+            background-image: 
+                linear-gradient(rgba(255,0,255,0.3) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,0,255,0.3) 1px, transparent 1px);
+            background-size: 40px 20px;
+            transform: perspective(500px) rotateX(60deg);
+            transform-origin: bottom;
+            z-index: 0;
+        }
+        .theme-synthwave .content-wrapper {
+            position: relative;
+            z-index: 1;
+        }
+        .theme-synthwave .card {
+            background: rgba(43, 16, 85, 0.8);
+            border: 2px solid #ff00ff;
+            border-radius: 10px;
+            padding: 2rem;
+            box-shadow: 0 0 20px #ff00ff, inset 0 0 10px #ff00ff;
+        }
+        .theme-synthwave h1 {
+            color: #fff;
+            text-shadow: 0 0 5px #fff, 0 0 10px #fff, 0 0 20px #ff00ff, 0 0 40px #ff00ff, 0 0 80px #ff00ff;
+            font-style: italic;
+            text-transform: uppercase;
+        }
+        .theme-synthwave h2 {
+            color: #0ff;
+            text-shadow: 0 0 5px #0ff, 0 0 10px #0ff;
+        }
+        .theme-synthwave .btn {
+            background: linear-gradient(to right, #ff00ff, #00ffff);
+            border: none;
+            border-radius: 20px;
+            padding: 0.75rem 1.5rem;
+            color: #000;
+            font-weight: bold;
+            text-transform: uppercase;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(255,0,255,0.5);
+        }
+        .theme-synthwave select {
+            background: #2b1055;
+            border: 2px solid #00ffff;
+            color: #00ffff;
+            border-radius: 5px;
+            padding: 0.5rem 1rem;
+            outline: none;
+            text-shadow: 0 0 5px #00ffff;
+        }
+        .theme-synthwave select option {
+             background: #2b1055;
+        }
+
+        /* -------------------------------------------------------------------------- */
+        /* 10. Memphis Design (멤피스 디자인) */
+        /* -------------------------------------------------------------------------- */
+        .theme-memphis {
+            background-color: #fff;
+            background-image: 
+                radial-gradient(#000 15%, transparent 16%),
+                radial-gradient(#000 15%, transparent 16%);
+            background-size: 30px 30px;
+            background-position: 0 0, 15px 15px;
+            color: #000;
+        }
+        .theme-memphis .content-wrapper {
+            background-color: rgba(255,255,255,0.8);
+            padding: 2rem;
+            border-radius: 20px;
+        }
+        .theme-memphis .card {
+            background-color: #ffeb3b; /* 노랑 */
+            border: 4px solid #000;
+            border-radius: 0;
+            padding: 2rem;
+            position: relative;
+            box-shadow: 10px 10px 0 #e91e63; /* 핑크 그림자 */
+            margin-bottom: 2rem;
+        }
+        .theme-memphis .card:nth-child(even) {
+            background-color: #00bcd4; /* 청록 */
+            box-shadow: -10px 10px 0 #ff9800; /* 오렌지 그림자 */
+        }
+        .theme-memphis h1, .theme-memphis h2 {
+            font-family: 'Comic Sans MS', cursive, sans-serif; /* 장난스러운 폰트 대체 */
+            font-weight: 900;
+            text-transform: uppercase;
+            background-color: #fff;
+            display: inline-block;
+            padding: 0.2rem 0.5rem;
+            border: 3px solid #000;
+            transform: rotate(-2deg);
+        }
+        .theme-memphis h2 {
+             transform: rotate(1deg);
+        }
+        .theme-memphis .btn {
+            background-color: #e91e63;
+            color: #fff;
+            border: 3px dashed #000;
+            border-radius: 50px;
+            padding: 1rem 2rem;
+            font-weight: 900;
+            font-size: 1.2rem;
+            cursor: pointer;
+            box-shadow: 5px 5px 0 #000;
+            transition: transform 0.1s;
+        }
+        .theme-memphis .btn:active {
+            transform: scale(0.95);
+        }
+        .theme-memphis select {
+            background-color: #8bc34a; /* 연두 */
+            border: 4px solid #000;
+            border-radius: 0;
+            padding: 0.5rem 1rem;
+            font-weight: 900;
+            color: #000;
+            outline: none;
+            box-shadow: 5px 5px 0 #000;
+        }
+
+    </style>
+</head>
+<body id="app-body" class="theme-clay min-h-screen p-4 md:p-8">
+
+    <div class="content-wrapper max-w-5xl mx-auto">
+        
+        <!-- 헤더 및 테마 선택 영역 -->
+        <header class="flex flex-col md:flex-row justify-between items-center mb-10 gap-4">
+            <div>
+                <h1 class="text-3xl md:text-4xl font-black mb-2">디자인 패러다임</h1>
+                <p class="opacity-80">같은 내용, 다른 느낌. 테마를 선택해보세요.</p>
+            </div>
+            
+            <div class="flex items-center gap-3">
+                <label for="theme-select" class="font-bold hidden sm:block">스타일 선택:</label>
+                <select id="theme-select" onchange="changeTheme(this.value)" class="text-lg cursor-pointer">
+                    <option value="theme-clay">클레이모피즘 (Claymorphism)</option>
+                    <option value="theme-neobrutal">네오 브루탈리즘 (Neo Brutalism)</option>
+                    <option value="theme-aurora">오로라 UI (Aurora UI)</option>
+                    <option value="theme-material">머티리얼 디자인 (Material Design)</option>
+                    <option value="theme-bento">벤토박스 UI (Bento Box UI)</option>
+                    <option value="theme-bauhaus">바우하우스 (Bauhaus)</option>
+                    <option value="theme-flat">플랫 디자인 (Flat Design)</option>
+                    <option value="theme-cyberpunk">사이버펑크 (Cyberpunk)</option>
+                    <option value="theme-synthwave">신스웨이브 (Synthwave)</option>
+                    <option value="theme-memphis">멤피스 디자인 (Memphis Design)</option>
+                </select>
+            </div>
+        </header>
+
+        <!-- 메인 컨텐츠 영역 (카드 리스트) -->
+        <!-- 벤토박스 UI를 위해 컨테이너에 id 부여 -->
+        <main id="card-container" class="flex flex-col gap-8">
+            
+            <!-- 컨텐츠 카드 1 -->
+            <article class="card">
+                <h2 class="text-2xl font-bold mb-4">웹 디자인의 진화</h2>
+                <p class="mb-6 leading-relaxed">
+                    웹 디자인은 기술의 발전과 사용자 경험(UX)에 대한 이해도가 높아짐에 따라 끊임없이 변화해 왔습니다. 
+                    단순한 텍스트 위주의 페이지에서 시작해 현실 세계의 질감을 모방한 스큐어모피즘, 군더더기를 뺀 플랫 디자인을 거쳐 
+                    현재는 다양한 시각적 실험이 공존하는 시대가 되었습니다.
+                </p>
+                <button class="btn">자세히 알아보기</button>
+            </article>
+
+            <!-- 컨텐츠 카드 2 -->
+            <article class="card">
+                <h2 class="text-2xl font-bold mb-4">사용자 경험(UX)의 중요성</h2>
+                <p class="mb-6 leading-relaxed">
+                    디자인은 단순히 예쁘게 보이는 것을 넘어, 사용자가 목적을 달성하는 데 도움을 주어야 합니다. 
+                    버튼의 크기, 여백의 활용, 색상의 대비 등 모든 요소는 사용자의 인지와 행동에 영향을 미칩니다. 
+                    좋은 디자인은 사용자를 자연스럽게 유도합니다.
+                </p>
+                <button class="btn">관련 아티클 읽기</button>
+            </article>
+
+            <!-- 컨텐츠 카드 3 -->
+            <article class="card">
+                <h2 class="text-2xl font-bold mb-4">반응형 웹의 필수화</h2>
+                <p class="mb-6 leading-relaxed">
+                    스마트폰, 태블릿, 데스크탑 등 다양한 크기의 디스플레이가 사용되는 현대 환경에서, 
+                    하나의 웹사이트가 모든 기기에서 최적화된 화면을 제공하는 반응형 웹(Responsive Web) 기술은 
+                    선택이 아닌 필수 조건이 되었습니다.
+                </p>
+                <button class="btn">반응형 원리 보기</button>
+            </article>
+
+        </main>
+    </div>
+
+    <script>
+        /**
+         * 선택된 테마에 따라 body 요소의 클래스를 변경합니다.
+         * @param {string} themeClass - 적용할 테마 클래스명
+         */
+        function changeTheme(themeClass) {
+            const body = document.getElementById('app-body');
+            
+            // 기존 테마 클래스 제거
+            body.className = '';
+            
+            // 공통 클래스 (Tailwind 등) 및 새 테마 클래스 추가
+            body.classList.add(themeClass, 'min-h-screen', 'p-4', 'md:p-8');
+        }
+
+        // 초기 테마 설정 (선택 사항, HTML에 이미 적용되어 있으나 명시적 확인)
+        document.addEventListener('DOMContentLoaded', () => {
+            const select = document.getElementById('theme-select');
+            changeTheme(select.value);
+        });
+    </script>
+</body>
+</html>
